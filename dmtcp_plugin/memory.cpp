@@ -170,3 +170,30 @@ _EXTC int brk(void *addr) {
   }
   return ret;
 }
+
+void sbrk_log(int errnum, void *ret, intptr_t increment) {
+  char buf[LOG_BUF_SIZE] = {0};
+  long syscall_no = SYS_CALL_NUMBER(brk);
+  snprintf(buf, LOG_BUF_SIZE, "%d,%ld,%p,%ld", errnum, syscall_no, ret,
+           increment);
+  log(1, buf);
+}
+
+_EXTC void *sbrk(intptr_t increment) {
+  void *ret;
+  if (!trapped.test_and_set()) {
+    ret = CALL_REAL(sbrk)(increment);
+    int stored_errno = errno;
+    sbrk_log(stored_errno, ret, increment);
+
+    if (ret == (void*)-1){
+        perror("mall");
+    }
+    errno = stored_errno;
+
+    trapped.clear();
+  } else {
+    ret = CALL_REAL(sbrk)(increment);
+  }
+  return ret;
+}
