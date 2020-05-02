@@ -3,7 +3,7 @@ CC := cc # FILL: the compiler
 CCFLAG := -shared -lstdc++ # FILL: compile flags
 DBGFLAG := -g
 INCLUDE = -I../dmtcp/include
-CCOBJFLAG := $(CCFLAG) --std=c++11 -c -fPIC $(INCLUDE)
+CCOBJFLAG := $(CCFLAG) --std=c++11 -c -fPIC -Wall -Wextra -Wno-long-long $(INCLUDE)
 
 # path macros
 OBJ_PATH := .
