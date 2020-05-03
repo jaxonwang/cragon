@@ -1,9 +1,10 @@
 # tool macros
 CC := cc # FILL: the compiler
 CCFLAG := -shared -lstdc++ # FILL: compile flags
-DBGFLAG := -g
+DBGFLAG := -g -DDEBUG
 INCLUDE = -I../dmtcp/include
 CCOBJFLAG := $(CCFLAG) --std=c++11 -c -fPIC -Wall -Wextra -Wno-long-long $(INCLUDE)
+MKDIR := mkdir -p
 
 # path macros
 OBJ_PATH := .
@@ -37,7 +38,10 @@ $(TARGET): $(OBJ)
 $(OBJ_PATH)/%.o: $(SRC_PATH)/%.cpp*
 	$(CC) $(CCOBJFLAG) -o $@ $<
 
-$(DBG_PATH)/%.o: $(SRC_PATH)/%.cpp*
+debug_dir: 
+	$(MKDIR) $(DBG_PATH)
+
+$(DBG_PATH)/%.o: $(SRC_PATH)/%.cpp* debug_dir 
 	$(CC) $(CCOBJFLAG) $(DBGFLAG) -o $@ $<
 
 $(TARGET_DEBUG): $(OBJ_DEBUG)
@@ -54,6 +58,7 @@ debug: $(TARGET_DEBUG)
 clean:
 	@echo CLEAN $(CLEAN_LIST)
 	@rm -f $(CLEAN_LIST)
+	@rmdir $(DBG_PATH)
 
 .PHONY: distclean
 distclean:

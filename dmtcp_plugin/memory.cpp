@@ -105,8 +105,9 @@ void log(int level, const char *s) {
     }                                                                          \
     ret_type ret;                                                              \
     ret = NEXT_FNC(func_name)(arg_names);                                      \
-    log_call(#func_name, arg_names); /* log all calls */                       \
     int stored_errno = errno;                                                  \
+    log_call("DEBUG", #func_name, stored_errno, ret,                          \
+             arg_names); /* log all calls */                                   \
     after_##func_name(stored_errno, ret, arg_names);                           \
     errno = stored_errno;                                                      \
     trapped.clear();                                                           \

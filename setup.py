@@ -38,10 +38,14 @@ def buildDMTCPplugin(build_cmd):
     os.chdir(DMTCP_PLUGIN_DIR)
     #make
     make_cmd = ["make"]
+    dist_dir = "."
+    if build_cmd.debug:
+        make_cmd += ["debug"]
+        dist_dir = "debug"
     if build_cmd.parallel:
         make_cmd += ["-j", str(build_cmd.parallel)]
     build_cmd.spawn(make_cmd)
-    files = glob.glob("*.so")
+    files = glob.glob(os.path.join(dist_dir, "*.so"))
     for f in files:
         distutils.file_util.copy_file(f, os.path.join(target_dir, "lib"))
     os.chdir(cwd)
