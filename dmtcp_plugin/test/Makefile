@@ -3,6 +3,6 @@
 default: all
 all: CtestMemory
 CtestMemory: testMemory.c
-	gcc testMemory.c -o CtestMemory
+	gcc -lpthread testMemory.c -o CtestMemory
 
 
