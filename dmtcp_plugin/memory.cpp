@@ -1,5 +1,6 @@
 #include "dmtcp.h"
 #include <atomic>
+#include <type_traits>
 
 #include <cerrno>
 #include <climits>
@@ -18,9 +19,12 @@ using namespace std;
 
 #define _EXTC extern "C"
 
+const int LOG_BUF_SIZE = 256;
+
 static thread_local atomic_flag trapped = ATOMIC_FLAG_INIT;
 
 const char *LOGGING_FD_ENV_VAR = "DMTCP_PLUGIN_EXEINFO";
+const char LOGGING_FIELD_SEPERATOR = ',';
 
 ssize_t _stderr(const char *s) { return write(STDERR_FILENO, s, strlen(s)); }
 
@@ -93,7 +97,22 @@ void log(int level, const char *s) {
   _write(lg_fd, buf, strlen(buf));
   logging_lock.clear();
 }
-
+#ifdef DEBUG
+#define CREATE_WRAPPER(func_name, ret_type, args, arg_names...)                \
+  _EXTC ret_type func_name args {                                              \
+    if (trapped.test_and_set()) {                                              \
+      return NEXT_FNC(func_name)(arg_names);                                   \
+    }                                                                          \
+    ret_type ret;                                                              \
+    ret = NEXT_FNC(func_name)(arg_names);                                      \
+    log_call(#func_name, arg_names); /* log all calls */                       \
+    int stored_errno = errno;                                                  \
+    after_##func_name(stored_errno, ret, arg_names);                           \
+    errno = stored_errno;                                                      \
+    trapped.clear();                                                           \
+    return ret;                                                                \
+  }
+#else
 #define CREATE_WRAPPER(func_name, ret_type, args, arg_names...)                \
   _EXTC ret_type func_name args {                                              \
     if (trapped.test_and_set()) {                                              \
@@ -102,28 +121,53 @@ void log(int level, const char *s) {
     ret_type ret;                                                              \
     ret = NEXT_FNC(func_name)(arg_names);                                      \
     int stored_errno = errno;                                                  \
-                                                                               \
     after_##func_name(stored_errno, ret, arg_names);                           \
-                                                                               \
     errno = stored_errno;                                                      \
     trapped.clear();                                                           \
     return ret;                                                                \
   }
+#endif
 
-#define LOG_CALL(format, args_names...)                                        \
-  {                                                                            \
-    const int LOG_BUF_SIZE = 256;                                              \
-    char buf[LOG_BUF_SIZE] = {0};                                              \
-    snprintf(buf, LOG_BUF_SIZE, format, arg_names);                            \
-    log(1, buf);                                                               \
+template <class T> const char *get_format() {
+  static_assert(!is_same<T, T>::value, "Not able to fomart this type.");
+  return "";
+}
+
+template <> const char *get_format<int>() { return "%d"; }
+template <> const char *get_format<char *>() { return "%s"; }
+template <> const char *get_format<const char *>() { return "%s"; }
+template <> const char *get_format<void *>() { return "%p"; }
+template <> const char *get_format<long>() { return "%ld"; }
+template <> const char *get_format<long long>() { return "%lld"; }
+template <> const char *get_format<unsigned long>() { return "%lu"; }
+
+inline void _arg_format(char *, int) {}
+
+template <class Arg, class... Args>
+inline void _arg_format(char *buf, int bufsize, Arg first, Args... args) {
+  const char *format = get_format<Arg>();
+  snprintf(buf, bufsize, format, first);
+  int len = strlen(buf);
+  buf += len;
+  bufsize -= len;
+  if (sizeof...(args) != 0) {
+    *buf++ = LOGGING_FIELD_SEPERATOR;
+    bufsize--;
   }
+  _arg_format(buf, bufsize, args...);
+}
+
+template <class... Args> inline void log_call(Args... args) {
+  char buf[LOG_BUF_SIZE] = {0};
+  _arg_format(buf, LOG_BUF_SIZE - 1, args...);
+  log(1, buf);
+}
 
 void after_mmap(int errnum, void *ret, void *addr, size_t length, int prot,
                 int flags, int fd, off_t offset) {
-  char buf[LOG_BUF_SIZE] = {0};
-  snprintf(buf, LOG_BUF_SIZE, "%d,mmap,%p,%p,%lu,%d,%d,%d,%ld", errnum, ret,
-           addr, length, prot, flags, fd, offset);
-  log(1, buf);
+  if (ret == (void *)-1) {
+    log_call("mmap", errnum, ret, addr, length, prot, flags, fd, offset);
+  }
 }
 
 CREATE_WRAPPER(mmap, void *,
@@ -132,45 +176,53 @@ CREATE_WRAPPER(mmap, void *,
                addr, length, prot, flags, fd, offset)
 
 void after_brk(int errnum, int ret, void *addr) {
-  char buf[LOG_BUF_SIZE] = {0};
-  snprintf(buf, LOG_BUF_SIZE, "%d,brk,%d,%p", errnum, ret, addr);
-  log(1, buf);
+  if (ret == -1) {
+    log_call("brk", errnum, ret, addr);
+  }
 }
 
 CREATE_WRAPPER(brk, int, (void *addr), addr)
 
 void after_sbrk(int errnum, void *ret, intptr_t increment) {
-  char buf[LOG_BUF_SIZE] = {0};
-  snprintf(buf, LOG_BUF_SIZE, "%d,sbrk,%p,%ld", errnum, ret, increment);
-  log(1, buf);
+  if (ret == (void *)-1) {
+    log_call("sbrk", errnum, ret, increment);
+  }
 }
 
 CREATE_WRAPPER(sbrk, void *, (intptr_t increment), increment)
 
 inline void after_malloc(int errnum, void *ret, size_t size) {
-  char buf[LOG_BUF_SIZE] = {0};
-  snprintf(buf, LOG_BUF_SIZE, "%d,malloc,%p,%ld", errnum, ret, size);
-  log(1, buf);
+  if (ret == NULL) {
+    log_call("malloc", errnum, ret, size);
+  }
 }
 
 CREATE_WRAPPER(malloc, void *, (size_t size), size)
 
 inline void after_calloc(int errnum, void *ret, size_t nmemb, size_t size) {
-  char buf[LOG_BUF_SIZE] = {0};
-  snprintf(buf, LOG_BUF_SIZE, "%d,calloc,%p,%ld, %ld", errnum, ret, nmemb,
-           size);
-  log(1, buf);
+  if (ret == NULL) {
+    log_call("calloc", errnum, ret, nmemb, size);
+  }
 }
 
 CREATE_WRAPPER(calloc, void *, (size_t nmemb, size_t size), nmemb, size)
 
 void after_realloc(int errnum, void *ret, void *ptr, size_t size) {
-  char buf[LOG_BUF_SIZE] = {0};
-  snprintf(buf, LOG_BUF_SIZE, "%d,realloc,%p,%p, %ld", errnum, ret, ptr, size);
-  log(1, buf);
+  if (ret == NULL) {
+    log_call("realloc", errnum, ret, ptr, size);
+  }
 }
 
 CREATE_WRAPPER(realloc, void *, (void *ptr, size_t size), ptr, size)
+
+void after_reallocarray(int errnum, void *ret, void *ptr, size_t nmemb,
+                        size_t size) {
+  if (ret == NULL) {
+    log_call("reallocarray", errnum, ret, ptr, nmemb, size);
+  }
+}
+CREATE_WRAPPER(reallocarray, void *, (void *ptr, size_t nmemb, size_t size),
+               ptr, nmemb, size)
 
 // static void eventHook(DmtcpEvent_t event, DmtcpEventData_t *data) {
 //   switch (event) {
