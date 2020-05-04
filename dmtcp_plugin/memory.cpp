@@ -4,9 +4,11 @@
 
 #include <cerrno>
 #include <climits>
+#include <cstdarg>
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
+
 #include <dlfcn.h>
 #include <unistd.h>
 
@@ -97,23 +99,17 @@ void log(int level, const char *s) {
   _write(lg_fd, buf, strlen(buf));
   logging_lock.clear();
 }
+
 #ifdef DEBUG
-#define CREATE_WRAPPER(func_name, ret_type, args, arg_names...)                \
-  _EXTC ret_type func_name args {                                              \
-    if (trapped.test_and_set()) {                                              \
-      return NEXT_FNC(func_name)(arg_names);                                   \
-    }                                                                          \
-    ret_type ret;                                                              \
-    ret = NEXT_FNC(func_name)(arg_names);                                      \
-    int stored_errno = errno;                                                  \
-    log_call("DEBUG", #func_name, stored_errno, ret,                          \
+#define DEBUG_INFO(func_name, errno, ret, arg_names...)                        \
+  do {                                                                         \
+    log_call("DEBUG", func_name, stored_errno, ret,                            \
              arg_names); /* log all calls */                                   \
-    after_##func_name(stored_errno, ret, arg_names);                           \
-    errno = stored_errno;                                                      \
-    trapped.clear();                                                           \
-    return ret;                                                                \
-  }
+  } while (0)
 #else
+#define DEBUG_INFO(func_name, errno, ert, arg_names...)
+#endif
+
 #define CREATE_WRAPPER(func_name, ret_type, args, arg_names...)                \
   _EXTC ret_type func_name args {                                              \
     if (trapped.test_and_set()) {                                              \
@@ -122,12 +118,33 @@ void log(int level, const char *s) {
     ret_type ret;                                                              \
     ret = NEXT_FNC(func_name)(arg_names);                                      \
     int stored_errno = errno;                                                  \
+    DEBUG_INFO(#func_name, stored_errno, ret, arg_names);                      \
     after_##func_name(stored_errno, ret, arg_names);                           \
     errno = stored_errno;                                                      \
     trapped.clear();                                                           \
     return ret;                                                                \
   }
-#endif
+
+#define CREATE_VARIADIC_WRAPPER(func_name, ret_type, args, last_arg,           \
+                                arg_names /*named param only*/...)             \
+  _EXTC ret_type func_name args {                                              \
+    va_list al;                                                                \
+    va_start(al, last_arg);                                                    \
+    ret_type ret;                                                              \
+    if (trapped.test_and_set()) {                                              \
+      ret = NEXT_FNC(func_name)(arg_names, al);                                \
+      va_end(al);                                                              \
+      return ret;                                                              \
+    }                                                                          \
+    ret = NEXT_FNC(func_name)(arg_names, al);                                  \
+    int stored_errno = errno;                                                  \
+    DEBUG_INFO(#func_name, stored_errno, ret, arg_names);                      \
+    after_##func_name(stored_errno, ret, arg_names, al);                       \
+    errno = stored_errno;                                                      \
+    trapped.clear();                                                           \
+    va_end(al);                                                                \
+    return ret;                                                                \
+  }
 
 template <class T> const char *get_format() {
   static_assert(!is_same<T, T>::value, "Not able to fomart this type.");
@@ -175,6 +192,25 @@ CREATE_WRAPPER(mmap, void *,
                (void *addr, size_t length, int prot, int flags, int fd,
                 off_t offset),
                addr, length, prot, flags, fd, offset)
+
+void after_mremap(int errnum, void *ret, void *old_address, size_t old_size,
+                  size_t new_size, int flags, ...) {
+  if (ret == (void *)-1) {
+    if (flags & MREMAP_FIXED) {
+      va_list al;
+      va_start(al, flags);
+      log_call("mremap", errnum, ret, old_address, old_size, new_size, flags,
+               va_arg(al, void *));
+      va_end(al);
+    } else
+      log_call("mremap", errnum, ret, old_address, old_size, new_size, flags);
+  }
+}
+
+CREATE_VARIADIC_WRAPPER(mremap, void *,
+                        (void *old_address, size_t old_size, size_t new_size,
+                         int flags, ...),
+                        flags, old_address, old_size, new_size, flags)
 
 void after_brk(int errnum, int ret, void *addr) {
   if (ret == -1) {
