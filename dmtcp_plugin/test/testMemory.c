@@ -83,7 +83,7 @@ void test_wrapped() {
   printf("Calling sbrk.\n");
   void *brk_addr = sbrk(chunk_size);
   printf("Calling brk.\n");
-  brk(brk_addr - chunk_size);
+  brk((u_int8_t*)brk_addr - chunk_size);
 
   printf("Wrapped function test done.\n");
 }
