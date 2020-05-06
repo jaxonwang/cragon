@@ -132,4 +132,5 @@ dmypy.json
 # vim
 *.swp
 
-dmtcp_plugin/test/CtestMemory
+# binary dir
+bin
