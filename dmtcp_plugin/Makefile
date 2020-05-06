@@ -12,7 +12,7 @@ SRC_PATH := .
 DBG_PATH := debug
 
 # compile macros
-TARGET_NAME := libexeinfo.so # : target name
+TARGET_NAME := libcragon_exeinfo.so # : target name
 TARGET := $(TARGET_NAME)
 TARGET_DEBUG := $(DBG_PATH)/$(TARGET_NAME)
 
