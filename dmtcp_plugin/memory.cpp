@@ -12,6 +12,7 @@
 #include <dlfcn.h>
 #include <unistd.h>
 
+#include <fcntl.h>
 #include <sys/mman.h>
 #include <sys/syscall.h>
 #include <sys/time.h>
@@ -25,7 +26,7 @@ const int LOG_BUF_SIZE = 256;
 
 static thread_local atomic_flag trapped = ATOMIC_FLAG_INIT;
 
-const char *LOGGING_FD_ENV_VAR = "DMTCP_PLUGIN_EXEINFO";
+const char *LOGGING_FD_ENV_VAR = "DMTCP_PLUGIN_EXEINFO_LOGGING_PIPE";
 const char LOGGING_FIELD_SEPERATOR = ',';
 
 ssize_t _stderr(const char *s) { return write(STDERR_FILENO, s, strlen(s)); }
@@ -50,10 +51,10 @@ int get_logging_fd() {
       return logging_fd;
     }
     errno = 0;
-    int fd_temp = strtol(evar, NULL, 10);
-    if (fd_temp < 0 || fd_temp > INT_MAX) {
-      _stderr("Bad LOGGING_FD_ENV_VAR! Log to stdout.\n");
-      logging_fd = STDOUT_FILENO;
+    int fd_temp = open(evar, O_WRONLY);
+    if(!fd_temp){
+        _perror("open logging fifo failed", errno);
+        abort();
     }
     logging_fd = fd_temp;
   }

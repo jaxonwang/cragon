@@ -4,8 +4,9 @@ from utils import ERROR
 dmtcp_path = None
 dmtcp_launch = None
 dmtcp_command = None
-
 dmtcp_plugins = None
+
+tmp_dir = None
 
 dmtcp_plugin_name = "libcragon_exeinfo.so"
 cragon_lib_dirname = "lib"

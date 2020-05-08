@@ -30,7 +30,11 @@ def cli(**args):
                       for f in dmtcp_file_check]
     for f in files_to_check:
         if not os.path.isfile(f):
-            err_exit("File: {} not found".format(f))
+            if not args["dmtcp_path"]:
+                err_exit(
+                    "File: {} not found. Please specify --dmtcp-path PATH.".format(f))
+            else:
+                err_exit("File: {} not found.".format(f))
     context.dmtcp_path = dmtcp_path
     context.dmtcp_launch = os.path.join(dmtcp_path, dmtcp_launch_file_name)
     context.dmtcp_command = os.path.join(dmtcp_path, dmtcp_launch_file_name)
@@ -40,7 +44,10 @@ def cli(**args):
         err_exit("Please specify command to run, or start with checkpoint directory")
 
     context.check()
-    execution.FirstRun(commands)
+    execution.system_set_up()
+    with execution.FirstRun(commands) as r:
+        r.run()
+    execution.system_tear_down()
 
 
 def main():
