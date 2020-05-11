@@ -52,9 +52,9 @@ int get_logging_fd() {
     }
     errno = 0;
     int fd_temp = open(evar, O_WRONLY);
-    if(!fd_temp){
-        _perror("open logging fifo failed", errno);
-        abort();
+    if (!fd_temp) {
+      _perror("open logging fifo failed", errno);
+      abort();
     }
     logging_fd = fd_temp;
   }
@@ -262,23 +262,27 @@ void after_reallocarray(int errnum, void *ret, void *ptr, size_t nmemb,
 CREATE_WRAPPER(reallocarray, void *, (void *ptr, size_t nmemb, size_t size),
                ptr, nmemb, size)
 
-// static void eventHook(DmtcpEvent_t event, DmtcpEventData_t *data) {
-//   switch (event) {
-//   case DMTCP_EVENT_INIT:
-//       if(!handle.load()){
-//         handle.store(dlopen("libc.so.6", RTLD_NOW));
-//       }
-//     break;
-//   }
-// }
-//
-// DmtcpPluginDescriptor_t exeinfo_plugin = {
-//     DMTCP_PLUGIN_API_VERSION,
-//     DMTCP_PACKAGE_VERSION,
-//     "exeinfo",
-//     "JX Wang",
-//     "jxwang92@gmail.com",
-//     "Get execution info by wrapping glibc calls",
-//     eventHook};
-//
-// DMTCP_DECL_PLUGIN(exeinfo_plugin);
+static void eventHook(DmtcpEvent_t event, DmtcpEventData_t *data) {
+  switch (event) {
+  case DMTCP_EVENT_INIT:
+    break;
+  case DMTCP_EVENT_EXIT:
+    if(close(get_logging_fd())){
+      _perror("Closing logging fd failed", errno);
+    }
+    break;
+  default:
+    break;
+  }
+}
+
+DmtcpPluginDescriptor_t exeinfo_plugin = {
+    DMTCP_PLUGIN_API_VERSION,
+    DMTCP_PACKAGE_VERSION,
+    "exeinfo",
+    "JX Wang",
+    "jxwang92@gmail.com",
+    "Get execution info by wrapping glibc calls",
+    eventHook};
+
+DMTCP_DECL_PLUGIN(exeinfo_plugin);

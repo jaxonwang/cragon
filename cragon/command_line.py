@@ -37,7 +37,7 @@ def cli(**args):
                 err_exit("File: {} not found.".format(f))
     context.dmtcp_path = dmtcp_path
     context.dmtcp_launch = os.path.join(dmtcp_path, dmtcp_launch_file_name)
-    context.dmtcp_command = os.path.join(dmtcp_path, dmtcp_launch_file_name)
+    context.dmtcp_command = os.path.join(dmtcp_path, dmtcp_command_file_name)
 
     commands = args["commands"]
     if not commands:
