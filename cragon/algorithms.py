@@ -1,20 +1,15 @@
-
+import utils
 import threading
 
 
-class CkptAlgorithms(object):
-    def start(self):
-        self.thread = threading.Thread(target=self.loop_body)
-        self.thread.start()
-
-    def stop(self):
-        self.stop_flag.set()
-        self.thread.join()
+class CkptAlgorithms(utils.StoppableService):
+    pass
 
 
 class Periodic(CkptAlgorithms):
 
     def __init__(self, do_ckpt_func, interval):
+        super().__init__()
         self.interval = interval
         self.stop_flag = threading.Event()
         self.do_ckpt_func = do_ckpt_func
@@ -27,5 +22,6 @@ class Periodic(CkptAlgorithms):
                 break
             else:
                 """ TODO deal with the instant when process
+                TODO: when the process is sleeping?
                 finished but stop not called yet"""
                 self.do_ckpt_func()

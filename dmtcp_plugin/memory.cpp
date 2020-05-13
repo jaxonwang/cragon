@@ -267,7 +267,9 @@ static void eventHook(DmtcpEvent_t event, DmtcpEventData_t *data) {
   case DMTCP_EVENT_INIT:
     break;
   case DMTCP_EVENT_EXIT:
-    if(close(get_logging_fd())){
+    // if it is never opened, open it right now to unblock process 
+    // waiting for openning fifo
+    if(close(get_logging_fd())){ 
       _perror("Closing logging fd failed", errno);
     }
     break;
