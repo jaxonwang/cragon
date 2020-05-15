@@ -1,4 +1,6 @@
 import os
+import getpass
+import socket
 from utils import ERROR
 
 dmtcp_path = None
@@ -17,6 +19,9 @@ cwd = os.getcwd()
 working_dir = None
 image_dir_name = "checkpoint_images"
 image_dir = None
+
+current_host_name = None
+current_user_name = None
 
 ROOT_DIR = os.path.dirname(os.path.abspath(__file__))
 
@@ -42,3 +47,8 @@ def check():
     # check working directory
     os.path.isdir(working_dir)
     image_dir = os.path.join(working_dir, image_dir_name)
+
+    # check user and hostname
+    global current_host_name, current_user_name
+    current_host_name = socket.gethostname()
+    current_user_name = getpass.getuser()

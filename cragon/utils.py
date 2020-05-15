@@ -2,6 +2,9 @@ import logging
 import os
 import sys
 import threading
+import time
+
+import context #TODO circular import
 
 logger = logging.getLogger()
 
@@ -20,6 +23,12 @@ def create_dir_unless_exist(path):
             pass
         elif os.path.isfile(path):
             FATAL("Can not create dir: {}".format(path), e)
+
+
+def format_time_to_readable(timestamp):
+    lt = time.localtime(timestamp)
+    return time.strftime(context.file_date_format, lt)
+
 
 def INFO(msg):
     logger.info(msg)

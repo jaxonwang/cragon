@@ -8,6 +8,7 @@ import tempfile
 import algorithms
 import monitor
 import utils
+import images
 
 from utils import FATAL, INFO
 
@@ -154,4 +155,7 @@ class FirstRun(Execution):
         INFO("Start checkpointing...")
         ckpt_process = subprocess.Popen(self.ckpt_command)
         ckpt_process.wait()
+        time_ckpt_finished = time.time()  # TODO assign id to ckpt images
+        images.archive_current_image(
+            time_ckpt_finished, self.command_to_run[0])
         INFO("Checkpoint done.")
