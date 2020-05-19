@@ -2,8 +2,9 @@ import click
 import datetime
 import os
 import sys
-import context
-import execution
+
+from cragon import context
+from cragon import execution
 
 
 def err_exit(err_msg):
@@ -21,7 +22,8 @@ dmtcp_file_check = [dmtcp_launch_file_name, dmtcp_command_file_name]
               help="DMTCP binary path")
 @click.option(
     '-w', '--working-directory', type=click.Path(exists=True),
-    help="cragon working directory where checkpoint images and logs are stored")
+    help=("cragon working directory where"
+          " checkpoint images and logs are stored"))
 @click.argument('commands', nargs=-1)
 def cli(**args):
     "Checkpoint and restore tool."

@@ -1,7 +1,6 @@
 import os
 import getpass
 import socket
-from utils import ERROR
 
 dmtcp_path = None
 dmtcp_launch = None
@@ -19,6 +18,7 @@ cwd = os.getcwd()
 working_dir = None
 image_dir_name = "checkpoint_images"
 image_dir = None
+log_file = "cragon.log"
 
 current_host_name = None
 current_user_name = None
@@ -32,7 +32,6 @@ class StartUpCheckError(RuntimeError):
 
 
 def check_failed(msg):
-    ERROR(msg)
     raise StartUpCheckError(msg)
 
 

@@ -1,16 +1,18 @@
-import context
 import sys
 import os
 import subprocess
 import time
 import tempfile
+import logging
 
-import algorithms
-import monitor
-import utils
-import images
+from cragon import context
+from cragon import algorithms
+from cragon import monitor
+from cragon import utils
+from cragon import images
 
-from utils import FATAL, INFO
+logger = logging.getLogger(__name__)
+logger.setLevel(logging.INFO)
 
 
 class DMTCPCmdOption(object):
@@ -23,7 +25,7 @@ class DMTCPCmdOption(object):
 
     def set_plugin(self):
         if not context.dmtcp_plugins:
-            FATAL("DMTCP plugin is missing!")
+            raise RuntimeError("DMTCP plugin is missing!")
         self.options["--with-plugin"] = context.dmtcp_plugins
 
     def gen_options(self):
@@ -49,6 +51,15 @@ class Execution(object):
 
 
 def system_set_up():
+    # config root logger
+    log_file_path = os.path.join(context.working_dir, context.log_file)
+    handler = logging.FileHandler(log_file_path)
+    handler.setLevel(logging.DEBUG)
+    formatter = logging.Formatter(
+        '%(asctime)s %(name)s %(levelname)s %(message)s')
+    handler.setFormatter(formatter)
+    logging.basicConfig(handlers=[handler])
+
     context.tmp_dir_obj = tempfile.TemporaryDirectory()
     context.tmp_dir = context.tmp_dir_obj.name
     utils.create_dir_unless_exist(context.image_dir)
@@ -123,7 +134,7 @@ class FirstRun(Execution):
         try:
             int(port)
         except Exception as e:
-            FATAL("Reading dmtcp port number error", e)
+            utils.FATAL("Reading dmtcp port number error", e)
         self.dmtcp_port = port
 
     def __enter__(self):
@@ -152,10 +163,11 @@ class FirstRun(Execution):
         ckpt_algorithm.stop()
 
     def check_point(self):
-        INFO("Start checkpointing...")
+        # this fun is called in another thread
+        logger.info("Start checkpointing...")
         ckpt_process = subprocess.Popen(self.ckpt_command)
         ckpt_process.wait()
         time_ckpt_finished = time.time()  # TODO assign id to ckpt images
         images.archive_current_image(
             time_ckpt_finished, self.command_to_run[0])
-        INFO("Checkpoint done.")
+        logger.info("Checkpoint done.")

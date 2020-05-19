@@ -2,8 +2,8 @@ import os
 import shutil
 import glob
 
-import context
-import utils
+from cragon import context
+from cragon import utils
 
 
 def images_in_dir():
@@ -28,3 +28,20 @@ def archive_current_image(ckpt_timestamp, process_name):
     image_files = get_unarchived_images()
     for f in image_files:
         shutil.move(f, archive_dir_path)
+
+
+class ImageUpdatePolicy(object):
+    pass
+
+
+class KeepLatestN(ImageUpdatePolicy):
+
+    def __init__(self, N):
+        pass
+
+
+@utils.init_once_singleton
+class ImagesManager(object):
+
+    def __init__(self, ckpt_policy):
+        self.ckpt_policy = ckpt_policy

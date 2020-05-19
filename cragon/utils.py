@@ -4,16 +4,44 @@ import sys
 import threading
 import time
 
-import context #TODO circular import
+from cragon import context  # TODO circular import
 
-logger = logging.getLogger()
+logger = logging.getLogger(__name__)
 
-handler = logging.StreamHandler(sys.stdout)
-handler.setLevel(logging.DEBUG)
-formatter = logging.Formatter(
-    '%(asctime)s - %(name)s - %(levelname)s - %(message)s')
-handler.setFormatter(formatter)
-logger.addHandler(handler)
+
+def singleton(c):
+    instance = None
+
+    def getinstance():
+        nonlocal instance
+        if not instance:
+            instance = c()
+        return instance
+    return getinstance
+
+
+def init_once_singleton(c):
+    instance = None
+
+    def getinstance(*args, **kargs):
+        nonlocal instance
+        if instance:
+            if args or kargs:
+                raise Exception(
+                    "The class %s has been initialized." %
+                    c.__name__)
+            return instance
+        else:
+            if not args and not kargs:
+                raise Exception(
+                    ("The class %s has not initialized."
+                     " Please specify the args.") %
+                    c.__name__)
+            else:
+                instance = c(*args, **kargs)
+                return instance
+    return getinstance
+
 
 def create_dir_unless_exist(path):
     try:
@@ -30,29 +58,16 @@ def format_time_to_readable(timestamp):
     return time.strftime(context.file_date_format, lt)
 
 
-def INFO(msg):
-    logger.info(msg)
-
-
-def DEBUG(msg):
-    logger.debug(msg)
-
-
-def WARNING(msg):
-    logger.warning(msg)
-
-
-def ERROR(msg):
-    logger.error(msg)
-
-
 def FATAL(msg=None, e=None):
+    """
+    system encounters an fatal error, log it before rasie
+    """
     if msg:
-        ERROR(msg)
+        logger.critical(msg)
     if not e:
         raise RuntimeError("FATAL:" + msg)
     else:
-        ERROR(e.message)
+        logger.critical(e.message)
         raise(e)
 
 
