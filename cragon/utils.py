@@ -58,17 +58,15 @@ def format_time_to_readable(timestamp):
     return time.strftime(context.file_date_format, lt)
 
 
-def FATAL(msg=None, e=None):
+def FATAL(msg="", e=None):
     """
     system encounters an fatal error, log it before rasie
     """
     if msg:
         logger.critical(msg)
     if not e:
-        raise RuntimeError("FATAL:" + msg)
-    else:
-        logger.critical(e.message)
-        raise(e)
+        e = RuntimeError("FATAL:" + msg)
+    raise(e)
 
 
 class AutoStopService(object):
@@ -103,7 +101,8 @@ class StoppableService(object):
         while(True):
             if(not self.stop_flag.isSet()):
                 self.task()
-            break
+            else:
+                break
 
     def stop(self):
         self.stop_flag.set()
