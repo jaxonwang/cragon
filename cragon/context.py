@@ -37,15 +37,22 @@ def check_failed(msg):
 
 def check():
     global dmtcp_plugins, image_dir
-    dmtcp_plugin_dir = os.path.join(ROOT_DIR, cragon_lib_dirname)
-    dmtcp_plugin_path = os.path.join(dmtcp_plugin_dir, dmtcp_plugin_name)
-    if not os.path.isfile(dmtcp_plugin_path):
+
+    # check plugin exist
+    if not dmtcp_plugins:
+        dmtcp_plugin_dir = os.path.join(ROOT_DIR, cragon_lib_dirname)
+        dmtcp_plugin_path = os.path.join(dmtcp_plugin_dir, dmtcp_plugin_name)
+        dmtcp_plugins = dmtcp_plugin_path
+    if not os.path.isfile(dmtcp_plugins):
         check_failed("Plugin: {} doesn't exist.".format(dmtcp_plugin_path))
-    dmtcp_plugins = dmtcp_plugin_path
 
     # check working directory
-    os.path.isdir(working_dir)
-    image_dir = os.path.join(working_dir, image_dir_name)
+    if not os.path.isdir(working_dir):
+        raise RuntimeError(
+            "The working directory: %s does not exist." %
+            working_dir)
+    if not image_dir:
+        image_dir = os.path.join(working_dir, image_dir_name)
 
     # check user and hostname
     global current_host_name, current_user_name

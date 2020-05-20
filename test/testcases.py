@@ -14,4 +14,3 @@ class TestCase(unittest.TestCase):
         regex = "^FATAL:" + regex
         self.assertRaisesRegex(RuntimeError, regex, *args, **kwds)
         logging.disable(logging.NOTSET)
-

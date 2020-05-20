@@ -60,13 +60,15 @@ def system_set_up():
     handler.setFormatter(formatter)
     logging.basicConfig(handlers=[handler])
 
-    context.tmp_dir_obj = tempfile.TemporaryDirectory()
-    context.tmp_dir = context.tmp_dir_obj.name
+    # init tmp dir
+    context.tmp_dir = tempfile.mkdtemp()
+
+    # init image dir
     utils.create_dir_unless_exist(context.image_dir)
 
 
 def system_tear_down():
-    del context.tmp_dir_obj
+    utils.safe_clean_file(context.tmp_dir)
 
 
 class FirstRun(Execution):
@@ -93,8 +95,10 @@ class FirstRun(Execution):
         self.command_to_run = command_to_run
         self.dmtcp_cmd = [context.dmtcp_launch]
         self.dmtcp_cmd += DMTCPrun().gen_options()
-        # TODO
         self.dmtcp_cmd += ["--ckptdir", context.image_dir]
+
+        # will be init after execution
+        self.intercept_monitor = None
 
         # built in options
         # using random port num for dmtcp coordinator
@@ -141,10 +145,14 @@ class FirstRun(Execution):
         return self
 
     def __exit__(self, type, value, traceback):
-        self.intercept_monitor.stop()
-        del self.intercept_monitor
-        os.unlink(self.fifo_path)
-        os.unlink(self.dmtcp_port_file_path)
+        # should never raise here, clean carefully
+        if self.intercept_monitor:
+            self.intercept_monitor.stop()
+            del self.intercept_monitor
+
+        utils.safe_clean_file(self.fifo_path)
+        utils.safe_clean_file(self.dmtcp_port_file_path)
+
         return True
 
     def run(self):

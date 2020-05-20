@@ -43,6 +43,11 @@ def init_once_singleton(c):
     return getinstance
 
 
+def safe_clean_file(file_path):
+    if file_path and os.path.isfile(file_path):
+        os.unlink(file_path)
+
+
 def create_dir_unless_exist(path):
     try:
         os.makedirs(path)
