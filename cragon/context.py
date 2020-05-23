@@ -2,6 +2,8 @@ import os
 import getpass
 import socket
 
+from cragon.algorithms import Periodic
+
 dmtcp_path = None
 dmtcp_launch = None
 dmtcp_command = None
@@ -25,6 +27,9 @@ current_user_name = None
 
 ROOT_DIR = os.path.dirname(os.path.abspath(__file__))
 
+ckpt_intervals = 60
+ckpt_algorihtm = None
+
 
 class StartUpCheckError(RuntimeError):
     "Raise when fatal error during start up check"
@@ -36,7 +41,7 @@ def check_failed(msg):
 
 
 def check():
-    global dmtcp_plugins, image_dir
+    global dmtcp_plugins, image_dir, ckpt_algorihtm, ckpt_intervals
 
     # check plugin exist
     if not dmtcp_plugins:
@@ -58,3 +63,14 @@ def check():
     global current_host_name, current_user_name
     current_host_name = socket.gethostname()
     current_user_name = getpass.getuser()
+
+    # check algorithms
+    if ckpt_intervals:
+        ckpt_algorihtm = Periodic
+
+    if not ckpt_algorihtm:
+        check_failed("Should at least specity a ckpt algorithm or intervals.")
+    if ckpt_algorihtm is Periodic:
+        if not ckpt_intervals:
+            check_failed(
+                "Periodic checkpoint should specify intervals option.")

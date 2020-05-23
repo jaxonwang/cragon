@@ -20,6 +20,9 @@ dmtcp_file_check = [dmtcp_launch_file_name, dmtcp_command_file_name]
 @click.command()
 @click.option('-p', '--dmtcp-path', type=click.Path(exists=True),
               help="DMTCP binary path")
+@click.option('-i', '--intervals', type=click.FLOAT,
+              help=("Time in second(s) between checkpoints"
+                    " in the naive checkpoint algorithm."))
 @click.option(
     '-w', '--working-directory', type=click.Path(exists=True),
     help=("cragon working directory where"
@@ -60,6 +63,10 @@ def cli(**args):
         os.mkdir(context.working_dir)
     else:
         context.working_dir = args["working_directory"]
+
+    # check ckpt algorihtms
+    if args["intervals"]:
+        context.ckpt_intervals = float(args["intervals"])
 
     # check system
     context.check()

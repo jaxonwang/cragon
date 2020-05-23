@@ -90,6 +90,13 @@ class FirstRun(Execution):
         self.ckpt_command += ["--coord-host", host, "--coord-port", port]
         self.ckpt_command.append("-bc")
 
+    def init_ckpt_algorithm(self):
+        def ckpt_func(): return FirstRun.check_point(self)
+        # TODO: this line sucks
+        if context.ckpt_algorihtm is algorithms.Periodic:
+            self.ckpt_algorithm = context.ckpt_algorihtm(ckpt_func,
+                                                         context.ckpt_intervals)
+
     def __init__(self, command_to_run):
         self.dmtcp_coordinator_host = "127.0.0.1"
         self.command_to_run = command_to_run
@@ -108,6 +115,11 @@ class FirstRun(Execution):
         for c in command_to_run:
             self.dmtcp_cmd.append(c)
 
+        # init algorithm
+        self.ckpt_algorithm = None
+        self.init_ckpt_algorithm()
+
+        # init pipe
         self.init_pipe()
 
     def start_intercept_monitor(self):
@@ -162,13 +174,11 @@ class FirstRun(Execution):
 
         self.start_intercept_monitor()
 
-        def ckpt_func(): return FirstRun.check_point(self)
-        ckpt_algorithm = algorithms.Periodic(ckpt_func, 1)
-        ckpt_algorithm.start()
+        self.ckpt_algorithm.start()
 
         self.process_dmtcp_wrapped.wait()
 
-        ckpt_algorithm.stop()
+        self.ckpt_algorithm.stop()
 
     def check_point(self):
         # this fun is called in another thread
