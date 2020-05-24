@@ -3,7 +3,7 @@ import os
 from . import integrated_test
 
 
-def test_c_memory(tmpdir, capfd):
+def test_c_memory(tmpdir, capfd, build_test):
     binary_name = "CtestMemory"
     binary_path = os.path.join(integrated_test.dmtcp_plugin_test_bin_dir,
                                binary_name)
