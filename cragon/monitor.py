@@ -1,6 +1,7 @@
 import os
 
 from cragon import utils
+from cragon import context
 
 
 class InterceptedCallMonitor(utils.AutoStopService):
@@ -8,7 +9,8 @@ class InterceptedCallMonitor(utils.AutoStopService):
     def __init__(self, fifo_path, record_dir):
         super().__init__()
         self.fifo_path = fifo_path
-        self.record_file = os.path.join(record_dir, "intercepted.log")
+        self.record_file = os.path.join(
+            record_dir, context.intercepted_log_name)
 
     def body(self):
         with open(self.record_file, "a") as rf:

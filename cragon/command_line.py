@@ -58,8 +58,10 @@ def cli(**args):
     # check working directory
     if not args["working_directory"]:
         date_str = datetime.datetime.now().strftime(context.file_date_format)
+        # get the correct command file
+        cmdname = os.path.basename(commands[0])
         context.working_dir = os.path.join(
-            context.cwd, "cragon_{}_{}".format(commands[0], date_str))
+            context.cwd, "cragon_{}_{}".format(cmdname, date_str))
         os.mkdir(context.working_dir)
     else:
         context.working_dir = args["working_directory"]
@@ -72,10 +74,16 @@ def cli(**args):
     context.check()
 
     # start all
+
     execution.system_set_up()
+    retcode = 1
     with execution.FirstRun(commands) as r:
         r.run()
+        retcode = r.returncode
     execution.system_tear_down()
+
+    # return result of subprocess
+    exit(retcode)
 
 
 def main():

@@ -20,7 +20,8 @@ cwd = os.getcwd()
 working_dir = None
 image_dir_name = "checkpoint_images"
 image_dir = None
-log_file = "cragon.log"
+log_file_name = "cragon.log"
+intercepted_log_name = "intercepted.log"
 
 current_host_name = None
 current_user_name = None

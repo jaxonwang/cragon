@@ -1,4 +1,3 @@
-import sys
 import os
 import subprocess
 import time
@@ -52,7 +51,7 @@ class Execution(object):
 
 def system_set_up():
     # config root logger
-    log_file_path = os.path.join(context.working_dir, context.log_file)
+    log_file_path = os.path.join(context.working_dir, context.log_file_name)
     handler = logging.FileHandler(log_file_path)
     handler.setLevel(logging.DEBUG)
     formatter = logging.Formatter(
@@ -98,6 +97,9 @@ class FirstRun(Execution):
                                                          context.ckpt_intervals)
 
     def __init__(self, command_to_run):
+        self.returncode = None
+
+        # init cmd
         self.dmtcp_coordinator_host = "127.0.0.1"
         self.command_to_run = command_to_run
         self.dmtcp_cmd = [context.dmtcp_launch]
@@ -177,6 +179,7 @@ class FirstRun(Execution):
         self.ckpt_algorithm.start()
 
         self.process_dmtcp_wrapped.wait()
+        self.returncode = self.process_dmtcp_wrapped.returncode
 
         self.ckpt_algorithm.stop()
 
