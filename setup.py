@@ -100,7 +100,5 @@ setup(
     },
     entry_points={
         'console_scripts': ['cragon=cragon.command_line:main'],
-    }
-
-
+    },
 )

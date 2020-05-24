@@ -1,32 +1,19 @@
-import unittest
 import os
 
 from . import integrated_test
 
-from cragon import execution
-from cragon import context
 
-
-class TestC(unittest.TestCase):
+def test_c_memory(tmpdir, capfd):
     binary_name = "CtestMemory"
-    binary_path = os.path.join(integrated_test.dmtcp_plugin_test_bin,
+    binary_path = os.path.join(integrated_test.dmtcp_plugin_test_bin_dir,
                                binary_name)
 
-    def test_run(self):
-        with execution.FirstRun([self.binary_path]) as r:
-            r.run()
+    cmd = ["-w", str(tmpdir), binary_path]
+    ret = integrated_test.run_cragon_cli(cmd)
 
-        record_file = os.path.join(context.working_dir, "intercepted.log")
-        with open(record_file) as f:
-            print(f.read())
-
-
-test_cases = (TestC,)
-
-
-def setUpModule():
-    integrated_test.env_set_up()
-
-
-def tearDownModule():
-    integrated_test.env_tear_down()
+    assert ret.returncode == 0
+    record_file = integrated_test.get_intercepted_log_path(tmpdir)
+    assert os.path.isfile(record_file)
+    with open(record_file) as f:
+        # no memory error is found
+        assert f.read() == ""
