@@ -64,9 +64,11 @@ void test_wrapped() {
   printf("Calling mremap.\n");
   chunk_mmap = mremap(chunk_mmap, chunk_size, 2 * chunk_size, MREMAP_MAYMOVE);
   printf("Calling mremap with the variadic argument.\n");
-  chunk_mmap = mremap(chunk_mmap, chunk_size, chunk_size, MREMAP_FIXED,
-                      chunk_mmap + chunk_size);
-  munmap(chunk_mmap, chunk_size * 4);
+  chunk_mmap = mremap(chunk_mmap, 2 * chunk_size, chunk_size, MREMAP_FIXED|MREMAP_MAYMOVE,
+                      chunk_mmap + 2 * chunk_size);
+
+  printf("Calling munmap.\n");
+  munmap(chunk_mmap, chunk_size);
 
   printf("Calling malloc.\n");
   int *chunk_malloc = malloc(chunk_size);

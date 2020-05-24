@@ -126,27 +126,6 @@ void log(int level, const char *s) {
     return ret;                                                                \
   }
 
-#define CREATE_VARIADIC_WRAPPER(func_name, ret_type, args, last_arg,           \
-                                arg_names /*named param only*/...)             \
-  _EXTC ret_type func_name args {                                              \
-    va_list al;                                                                \
-    va_start(al, last_arg);                                                    \
-    ret_type ret;                                                              \
-    if (trapped.test_and_set()) {                                              \
-      ret = NEXT_FNC(func_name)(arg_names, al);                                \
-      va_end(al);                                                              \
-      return ret;                                                              \
-    }                                                                          \
-    ret = NEXT_FNC(func_name)(arg_names, al);                                  \
-    int stored_errno = errno;                                                  \
-    DEBUG_INFO(#func_name, stored_errno, ret, arg_names);                      \
-    after_##func_name(stored_errno, ret, arg_names, al);                       \
-    errno = stored_errno;                                                      \
-    trapped.clear();                                                           \
-    va_end(al);                                                                \
-    return ret;                                                                \
-  }
-
 template <class T> const char *get_format() {
   static_assert(!is_same<T, T>::value, "Not able to fomart this type.");
   return "";
@@ -208,10 +187,34 @@ void after_mremap(int errnum, void *ret, void *old_address, size_t old_size,
   }
 }
 
-CREATE_VARIADIC_WRAPPER(mremap, void *,
-                        (void *old_address, size_t old_size, size_t new_size,
-                         int flags, ...),
-                        flags, old_address, old_size, new_size, flags)
+// don't use wrapper for variadic
+_EXTC void *mremap(void *old_address, size_t old_size, size_t new_size,
+                   int flags, ...) {
+  va_list al;
+  va_start(al, flags);
+  void *ret;
+
+  void * newaddr = 0;
+
+  bool nowtrapped = trapped.test_and_set();
+  if (flags & MREMAP_FIXED) {
+    newaddr = va_arg(al, void *);
+    ret = NEXT_FNC(mremap)(old_address, old_size, new_size, flags,
+                           newaddr);
+  } else {
+    ret = NEXT_FNC(mremap)(old_address, old_size, new_size, flags);
+  }
+  if (!nowtrapped) {
+    int stored_errno = errno;
+    DEBUG_INFO("mremap", stored_errno, ret, old_address, old_size, new_size,
+               flags, newaddr);
+    after_mremap(stored_errno, ret, old_address, old_size, new_size, flags, al, newaddr);
+    errno = stored_errno;
+    trapped.clear();
+  }
+  va_end(al);
+  return ret;
+}
 
 void after_brk(int errnum, int ret, void *addr) {
   if (ret == -1) {
@@ -267,9 +270,9 @@ static void eventHook(DmtcpEvent_t event, DmtcpEventData_t *data) {
   case DMTCP_EVENT_INIT:
     break;
   case DMTCP_EVENT_EXIT:
-    // if it is never opened, open it right now to unblock process 
+    // if it is never opened, open it right now to unblock process
     // waiting for openning fifo
-    if(close(get_logging_fd())){ 
+    if (close(get_logging_fd())) {
       _perror("Closing logging fd failed", errno);
     }
     break;
