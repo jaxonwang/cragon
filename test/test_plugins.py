@@ -16,4 +16,5 @@ def test_c_memory(tmpdir, capfd, build_test):
     assert os.path.isfile(record_file)
     with open(record_file) as f:
         # no memory error is found
-        assert f.read() == ""
+        s = f.read()
+    assert s == ""
