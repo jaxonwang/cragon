@@ -23,13 +23,17 @@ dmtcp_file_check = [dmtcp_launch_file_name, dmtcp_command_file_name]
 @click.option('-i', '--intervals', type=click.FLOAT,
               help=("Time in second(s) between checkpoints"
                     " in the naive checkpoint algorithm."))
-@click.option(
-    '-w', '--working-directory', type=click.Path(exists=True),
-    help=("cragon working directory where"
-          " checkpoint images and logs are stored"))
+@click.option('-r', '--restart', is_flag=True, default=False,
+              help=("If specified, cragon will rerun from current directory or"
+                    " working directory specified in -w/--working-directory"))
+@click.option('-w', '--working-directory', type=click.Path(exists=True),
+              help=("cragon working directory where"
+                    " checkpoint images and logs are stored"))
 @click.argument('commands', nargs=-1)
 def cli(**args):
     "Checkpoint and restore tool."
+
+    is_restart = args["restart"]
 
     # check execution path
     dmtcp_path = args["dmtcp_path"]
@@ -52,11 +56,13 @@ def cli(**args):
 
     # get commands to execute
     commands = args["commands"]
-    if not commands:
+    if not is_restart and not commands:
         err_exit("Please specify command to run, or start with checkpoint directory")
 
     # check working directory
-    if not args["working_directory"]:
+    if is_restart and not args["working_directory"]:
+        err_exit("Please working directory from which cragon start.")
+    elif not args["working_directory"]:
         date_str = datetime.datetime.now().strftime(context.file_date_format)
         # get the correct command file
         cmdname = os.path.basename(commands[0])
@@ -72,12 +78,13 @@ def cli(**args):
 
     # check system
     context.check()
+    if is_restart:
+        context.restart_check()
 
     # start all
-
     execution.system_set_up()
     retcode = 1
-    with execution.FirstRun(commands) as r:
+    with execution.FirstRun(cmd=commands, restart=is_restart) as r:
         r.run()
         retcode = r.returncode
     execution.system_tear_down()

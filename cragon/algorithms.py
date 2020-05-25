@@ -1,9 +1,17 @@
 import threading
+import logging
 
 from cragon import utils
 
+logger = logging.getLogger(__name__)
+logger.setLevel(logging.DEBUG)
+
+
 class CkptAlgorithms(utils.StoppableService):
-    pass
+
+    def stop(self):
+        super().stop()
+        logger.info("Checkpoint algorithm is stopped.")
 
 
 class Periodic(CkptAlgorithms):
@@ -24,4 +32,9 @@ class Periodic(CkptAlgorithms):
                 """ TODO deal with the instant when process
                 TODO: when the process is sleeping?
                 finished but stop not called yet"""
-                self.do_ckpt_func()
+                self.checkpoint()
+
+    def checkpoint(self):
+        logger.info("Start checkpointing...")
+        self.do_ckpt_func()  # TODO take ckpt time into account
+        logger.info("Checkpoint done.")

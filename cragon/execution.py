@@ -11,7 +11,7 @@ from cragon import utils
 from cragon import images
 
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.INFO)
+logger.setLevel(logging.DEBUG)
 
 
 class DMTCPCmdOption(object):
@@ -93,15 +93,15 @@ class FirstRun(Execution):
         def ckpt_func(): return FirstRun.check_point(self)
         # TODO: this line sucks
         if context.ckpt_algorihtm is algorithms.Periodic:
-            self.ckpt_algorithm = context.ckpt_algorihtm(ckpt_func,
-                                                         context.ckpt_intervals)
+            self.ckpt_algorithm = context.ckpt_algorihtm(
+                ckpt_func, context.ckpt_intervals)
 
-    def __init__(self, command_to_run):
+    def __init__(self, cmd=None, restart=False):
         self.returncode = None
 
         # init cmd
         self.dmtcp_coordinator_host = "127.0.0.1"
-        self.command_to_run = command_to_run
+        self.command_to_run = cmd
         self.dmtcp_cmd = [context.dmtcp_launch]
         self.dmtcp_cmd += DMTCPrun().gen_options()
         self.dmtcp_cmd += ["--ckptdir", context.image_dir]
@@ -114,7 +114,7 @@ class FirstRun(Execution):
         self.init_dmtcp_coordinator()
         self.dmtcp_cmd += ["--coord-port", "0",
                            "--port-file", self.dmtcp_port_file_path]
-        for c in command_to_run:
+        for c in self.command_to_run:
             self.dmtcp_cmd.append(c)
 
         # init algorithm
@@ -135,6 +135,9 @@ class FirstRun(Execution):
         trial_times = 0
         max_trail = 40
         port = None
+        logger.debug(
+            "Waiting for the port specified in file: %s" %
+            self.dmtcp_port_file_path)
         while(trial_times < max_trail):
             if os.path.isfile(self.dmtcp_port_file_path):
                 with open(self.dmtcp_port_file_path, "r") as f:
@@ -154,6 +157,7 @@ class FirstRun(Execution):
         except Exception as e:
             utils.FATAL("Reading dmtcp port number error", e)
         self.dmtcp_port = port
+        logger.debug("Suceesfully retrieved port: %s", self.dmtcp_port)
 
     def __enter__(self):
         return self
@@ -170,6 +174,8 @@ class FirstRun(Execution):
         return True
 
     def run(self):
+        logger.info("Start executing: %s" % " ".join(self.command_to_run))
+        logger.debug("Run DMTCP: %s" % " ".join(self.dmtcp_cmd))
         self.process_dmtcp_wrapped = subprocess.Popen(self.dmtcp_cmd)
         self.wait_for_port_file_available()
         self.init_ckpt_command(self.dmtcp_coordinator_host, self.dmtcp_port)
@@ -180,15 +186,28 @@ class FirstRun(Execution):
 
         self.process_dmtcp_wrapped.wait()
         self.returncode = self.process_dmtcp_wrapped.returncode
+        logger.info(
+            "Process to be checkpointed finished with ret code :%d." %
+            self.returncode)
 
         self.ckpt_algorithm.stop()
 
     def check_point(self):
         # this fun is called in another thread
-        logger.info("Start checkpointing...")
-        ckpt_process = subprocess.Popen(self.ckpt_command)
-        ckpt_process.wait()
+        logger.debug(
+            "Running checkpoint subprocess: %s." % " ".join(self.ckpt_command))
+        ckpt_process = subprocess.run(self.ckpt_command,
+                                        stdout=subprocess.PIPE,
+                                        stderr=subprocess.PIPE)
+        logger.debug("Checkpoint subprocess: %s finished with ret code:%d." % (
+            " ".join(self.ckpt_command), ckpt_process.returncode))
+
+        out, err = ckpt_process.stdout, ckpt_process.stderr
+        if ckpt_process.returncode != 0:
+            logger.warn("Checkpoint subprocess failed with return code: %d" %
+                        ckpt_process.returncode)
+            logger.warn("Checkpoint subprocess stdout: %s\n" % out)
+            logger.warn("Checkpoint subprocess stderr: %s\n" % err)
         time_ckpt_finished = time.time()  # TODO assign id to ckpt images
         images.archive_current_image(
             time_ckpt_finished, self.command_to_run[0])
-        logger.info("Checkpoint done.")

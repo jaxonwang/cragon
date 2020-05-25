@@ -5,7 +5,7 @@ from cragon import utils
 from cragon import context
 
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.INFO)
+logger.setLevel(logging.DEBUG)
 
 
 class InterceptedCallMonitor(utils.StoppableService):
@@ -16,6 +16,12 @@ class InterceptedCallMonitor(utils.StoppableService):
         self.fifo_path = fifo_path
         self.record_file = os.path.join(
             record_dir, context.intercepted_log_name)
+
+    def start(self):
+        logger.info("Starting interception monitor.")
+        logger.debug("Reading from fifo: %s." % self.fifo_path)
+        logger.debug("Memory access logging to: %s." % self.record_file)
+        super().start()
 
     def loop_body(self):
         with open(self.record_file, "a") as rf:

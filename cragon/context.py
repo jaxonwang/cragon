@@ -3,6 +3,7 @@ import getpass
 import socket
 
 from cragon.algorithms import Periodic
+from cragon import images
 
 dmtcp_path = None
 dmtcp_launch = None
@@ -30,6 +31,8 @@ ROOT_DIR = os.path.dirname(os.path.abspath(__file__))
 
 ckpt_intervals = 60
 ckpt_algorihtm = None
+
+image_to_restart = None
 
 
 class StartUpCheckError(RuntimeError):
@@ -75,3 +78,9 @@ def check():
         if not ckpt_intervals:
             check_failed(
                 "Periodic checkpoint should specify intervals option.")
+
+def restart_check():
+    global image_to_restart
+    image_to_restart = images.latest_images()
+    if not image_to_restart:
+        check_failed("The images to restart can not be found.")
