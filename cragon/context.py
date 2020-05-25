@@ -9,6 +9,11 @@ dmtcp_path = None
 dmtcp_launch = None
 dmtcp_command = None
 dmtcp_plugins = None
+dmtcp_restart = None
+
+dmtcp_launch_file_name = "dmtcp_launch"
+dmtcp_command_file_name = "dmtcp_command"
+dmtcp_restart_file_name = "dmtcp_restart"
 
 tmp_dir = None
 
@@ -46,6 +51,11 @@ def check_failed(msg):
 
 def check():
     global dmtcp_plugins, image_dir, ckpt_algorihtm, ckpt_intervals
+    global dmtcp_launch, dmtcp_command
+
+    # check dmtcp binary path
+    dmtcp_launch = os.path.join(dmtcp_path, dmtcp_launch_file_name)
+    dmtcp_command = os.path.join(dmtcp_path, dmtcp_command_file_name)
 
     # check plugin exist
     if not dmtcp_plugins:
@@ -80,7 +90,11 @@ def check():
                 "Periodic checkpoint should specify intervals option.")
 
 def restart_check():
-    global image_to_restart
+    global image_to_restart, dmtcp_restart
+
+    # dmtcp restart binary
+    dmtcp_restart = os.path.join(dmtcp_path, dmtcp_restart_file_name)
+
     image_to_restart = images.latest_images()
     if not image_to_restart:
         check_failed("The images to restart can not be found.")

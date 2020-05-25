@@ -36,10 +36,15 @@ class DMTCPCmdOption(object):
         return opts
 
 
-class DMTCPrun(DMTCPCmdOption):
+class DMTCPfirstrun(DMTCPCmdOption):
     def gen_options(self):
         self.set_new_coordinator()
         self.set_plugin()
+        return super().gen_options()
+
+class DMTCPrestart(DMTCPCmdOption):
+    def gen_options(self):
+        self.set_new_coordinator()
         return super().gen_options()
 
 
@@ -96,26 +101,46 @@ class FirstRun(Execution):
             self.ckpt_algorithm = context.ckpt_algorihtm(
                 ckpt_func, context.ckpt_intervals)
 
-    def __init__(self, cmd=None, restart=False):
-        self.returncode = None
-
-        # init cmd
-        self.dmtcp_coordinator_host = "127.0.0.1"
-        self.command_to_run = cmd
-        self.dmtcp_cmd = [context.dmtcp_launch]
-        self.dmtcp_cmd += DMTCPrun().gen_options()
+    def init_common_cmd(self):
         self.dmtcp_cmd += ["--ckptdir", context.image_dir]
-
-        # will be init after execution
-        self.intercept_monitor = None
 
         # built in options
         # using random port num for dmtcp coordinator
         self.init_dmtcp_coordinator()
         self.dmtcp_cmd += ["--coord-port", "0",
                            "--port-file", self.dmtcp_port_file_path]
+
+    def init_first_run_cmd(self):
+        self.dmtcp_cmd = [context.dmtcp_launch]
+        self.dmtcp_cmd += DMTCPfirstrun().gen_options()
+
+        self.init_common_cmd()
+
         for c in self.command_to_run:
             self.dmtcp_cmd.append(c)
+
+    def init_restart_cmd(self):
+        self.dmtcp_cmd = [context.dmtcp_restart]
+        self.dmtcp_cmd += DMTCPrestart().gen_options()
+
+        self.init_common_cmd()
+
+        self.dmtcp_cmd.append(context.image_to_restart)
+
+    def __init__(self, cmd=None, restart=False):
+        # the ret code of process to be checkpointed
+        self.returncode = None
+        # using localhost as coordinator
+        self.dmtcp_coordinator_host = "127.0.0.1"
+        # will be init after execution
+        self.intercept_monitor = None
+
+        # init cmd
+        self.command_to_run = cmd
+        if restart:
+            self.init_restart_cmd()
+        else:
+            self.init_first_run_cmd()
 
         # init algorithm
         self.ckpt_algorithm = None

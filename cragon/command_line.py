@@ -12,9 +12,10 @@ def err_exit(err_msg):
     sys.exit(2)
 
 
-dmtcp_launch_file_name = "dmtcp_launch"
-dmtcp_command_file_name = "dmtcp_command"
-dmtcp_file_check = [dmtcp_launch_file_name, dmtcp_command_file_name]
+dmtcp_file_check = [
+    context.dmtcp_launch_file_name,
+    context.dmtcp_command_file_name,
+    context.dmtcp_restart_file_name]
 
 
 @click.command()
@@ -51,8 +52,6 @@ def cli(**args):
             else:
                 err_exit("File: {} not found.".format(f))
     context.dmtcp_path = dmtcp_path
-    context.dmtcp_launch = os.path.join(dmtcp_path, dmtcp_launch_file_name)
-    context.dmtcp_command = os.path.join(dmtcp_path, dmtcp_command_file_name)
 
     # get commands to execute
     commands = args["commands"]
