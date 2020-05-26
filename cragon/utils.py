@@ -1,6 +1,5 @@
 import logging
 import os
-import sys
 import threading
 import time
 
@@ -44,8 +43,13 @@ def init_once_singleton(c):
 
 
 def safe_clean_file(file_path):
-    if file_path and os.path.isfile(file_path):
-        os.unlink(file_path)
+    if not file_path:
+        return
+    if os.path.exists(file_path):
+        if os.path.isdir(file_path):
+            os.rmdir(file_path)
+        else:
+            os.unlink(file_path)
 
 
 def create_dir_unless_exist(path):

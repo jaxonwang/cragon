@@ -1,4 +1,5 @@
 import os
+import json
 import getpass
 import socket
 
@@ -28,6 +29,7 @@ image_dir_name = "checkpoint_images"
 image_dir = None
 log_file_name = "cragon.log"
 intercepted_log_name = "intercepted.log"
+ckpt_info_file_name = "checkpoint_info"
 
 current_host_name = None
 current_user_name = None
@@ -38,6 +40,17 @@ ckpt_intervals = 60
 ckpt_algorihtm = None
 
 image_to_restart = None
+fifo_path = None  # guarenteed to be absolute
+# fifo need to restored exactly as last execution, will be init if
+# restart from ckpt in restart_check TODO: should I use another flag to
+# indicate is restart?
+
+# these tmp files will be deleted reversily whe system tear down
+# this should not be access by multiple thread
+tmp_file_created = []
+
+# the checkpoint info of last run
+last_ckpt_info = None
 
 
 class StartUpCheckError(RuntimeError):
@@ -89,12 +102,32 @@ def check():
             check_failed(
                 "Periodic checkpoint should specify intervals option.")
 
+
+def ckpt_info_check(ckpt_image_dir):
+    global last_ckpt_info
+
+    ckpt_info_file_path = os.path.join(ckpt_image_dir, ckpt_info_file_name)
+    if not os.path.isfile(ckpt_info_file_path):
+        check_failed("The checkpoint info file: %s is missing" %
+                     ckpt_info_file_path)
+    with open(ckpt_info_file_path, "r") as f:
+        last_ckpt_info = json.load(f)
+
+    global fifo_path
+    fifo_path = last_ckpt_info["data"]["fifo_path"]
+    # should be cleaned from last execution
+    if os.path.exists(fifo_path):
+        check_failed("Fifo file %s exist." % fifo_path)
+
+
 def restart_check():
     global image_to_restart, dmtcp_restart
 
     # dmtcp restart binary
     dmtcp_restart = os.path.join(dmtcp_path, dmtcp_restart_file_name)
 
-    image_to_restart = images.latest_images()
+    image_dir = images.latest_image_dir()
+    ckpt_info_check(image_dir)
+    image_to_restart = images.latest_image()
     if not image_to_restart:
         check_failed("The images to restart can not be found.")

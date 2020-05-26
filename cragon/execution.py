@@ -42,6 +42,7 @@ class DMTCPfirstrun(DMTCPCmdOption):
         self.set_plugin()
         return super().gen_options()
 
+
 class DMTCPrestart(DMTCPCmdOption):
     def gen_options(self):
         self.set_new_coordinator()
@@ -66,20 +67,40 @@ def system_set_up():
 
     # init tmp dir
     context.tmp_dir = tempfile.mkdtemp()
+    context.tmp_file_created.append(context.tmp_dir)
+    logger.debug("Temp folder: %s created." % context.tmp_dir)
 
     # init image dir
     utils.create_dir_unless_exist(context.image_dir)
 
+    # restore directory to create fifo
+    if context.fifo_path:
+        logger.debug("Restoring directories for %s" % context.fifo_path)
+        dirs = context.fifo_path.split(os.sep)[1:-1]
+        start = ""
+        for d in dirs:
+            start += os.sep + d
+            if not os.path.isdir(start):
+                os.mkdir(start)
+                context.tmp_file_created.append(start)
+
 
 def system_tear_down():
-    utils.safe_clean_file(context.tmp_dir)
+    logger.debug("Start cleanning before exit.")
+    for f in context.tmp_file_created[::-1]:
+        logger.debug("Trying to delete :%s if exist." % f)
+        utils.safe_clean_file(f)
+    logger.info("System stopped.")
 
 
 class FirstRun(Execution):
 
     def init_pipe(self):
-        self.fifo_path = os.path.abspath(os.path.join(context.tmp_dir,
-                                                      "logging.fifo"))
+        if self.isrestart:
+            self.fifo_path = context.fifo_path
+        else:
+            self.fifo_path = os.path.abspath(os.path.join(
+                context.tmp_dir, "cragon-logging.fifo"))
         os.mkfifo(self.fifo_path, 0o600)
         os.environ["DMTCP_PLUGIN_EXEINFO_LOGGING_PIPE"] = self.fifo_path
 
@@ -134,12 +155,17 @@ class FirstRun(Execution):
         self.dmtcp_coordinator_host = "127.0.0.1"
         # will be init after execution
         self.intercept_monitor = None
+        # record isrestart
+        self.isrestart = restart
+        # the command of process to run
+        self.command_to_run = None
 
         # init cmd
-        self.command_to_run = cmd
-        if restart:
+        if self.isrestart:
+            self.command_to_run = context.last_ckpt_info["command"]
             self.init_restart_cmd()
         else:
+            self.command_to_run = cmd
             self.init_first_run_cmd()
 
         # init algorithm
@@ -193,7 +219,9 @@ class FirstRun(Execution):
             self.intercept_monitor.stop()
             del self.intercept_monitor
 
+        logger.debug("Deleting fifo file: %s" % self.fifo_path)
         utils.safe_clean_file(self.fifo_path)
+        logger.debug("Deleting temp port file: %s" % self.dmtcp_port_file_path)
         utils.safe_clean_file(self.dmtcp_port_file_path)
 
         return True
@@ -217,13 +245,24 @@ class FirstRun(Execution):
 
         self.ckpt_algorithm.stop()
 
+    def execution_info(self):
+        exe_info = {}
+        exe_info["command"] = self.command_to_run
+        exe_info["hostname"] = context.current_host_name
+        exe_info["user"] = context.current_user_name
+        exe_info["data"] = {}
+        exe_info["data"]["fifo_path"] = self.fifo_path
+        return exe_info
+
     def check_point(self):
         # this fun is called in another thread
         logger.debug(
             "Running checkpoint subprocess: %s." % " ".join(self.ckpt_command))
+        # set cwd since it will generate shell script to its cwd
         ckpt_process = subprocess.run(self.ckpt_command,
-                                        stdout=subprocess.PIPE,
-                                        stderr=subprocess.PIPE)
+                                      stdout=subprocess.PIPE,
+                                      stderr=subprocess.PIPE,
+                                      cwd=context.image_dir)
         logger.debug("Checkpoint subprocess: %s finished with ret code:%d." % (
             " ".join(self.ckpt_command), ckpt_process.returncode))
 
@@ -233,6 +272,9 @@ class FirstRun(Execution):
                         ckpt_process.returncode)
             logger.warn("Checkpoint subprocess stdout: %s\n" % out)
             logger.warn("Checkpoint subprocess stderr: %s\n" % err)
-        time_ckpt_finished = time.time()  # TODO assign id to ckpt images
-        images.archive_current_image(
-            time_ckpt_finished, self.command_to_run[0])
+        else:
+            # TODO add event of ckpt finished
+            # TODO assign id to ckpt images
+            time_ckpt_finished = time.time()
+            images.archive_checkpoint(
+                time_ckpt_finished, self.execution_info())

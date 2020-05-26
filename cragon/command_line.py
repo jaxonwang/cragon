@@ -83,10 +83,12 @@ def cli(**args):
     # start all
     execution.system_set_up()
     retcode = 1
-    with execution.FirstRun(cmd=commands, restart=is_restart) as r:
-        r.run()
-        retcode = r.returncode
-    execution.system_tear_down()
+    try:
+        with execution.FirstRun(cmd=commands, restart=is_restart) as r:
+            r.run()
+            retcode = r.returncode
+    finally:
+        execution.system_tear_down()
 
     # return result of subprocess
     exit(retcode)
