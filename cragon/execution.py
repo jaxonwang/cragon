@@ -258,11 +258,9 @@ class FirstRun(Execution):
         # this fun is called in another thread
         logger.debug(
             "Running checkpoint subprocess: %s." % " ".join(self.ckpt_command))
-        # set cwd since it will generate shell script to its cwd
         ckpt_process = subprocess.run(self.ckpt_command,
                                       stdout=subprocess.PIPE,
-                                      stderr=subprocess.PIPE,
-                                      cwd=context.image_dir)
+                                      stderr=subprocess.PIPE)
         logger.debug("Checkpoint subprocess: %s finished with ret code:%d." % (
             " ".join(self.ckpt_command), ckpt_process.returncode))
 

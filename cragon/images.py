@@ -29,9 +29,12 @@ def latest_image_dir():
 
 
 def get_unarchived_images():
+    script_name = "dmtcp_restart_script*.sh"
     image_name = os.path.join(context.image_dir, "*.dmtcp")
-    script_name = os.path.join(context.image_dir, "*.sh")
-    files = glob.glob(image_name) + glob.glob(script_name)
+    script_pattern = os.path.join(context.image_dir, script_name)
+    files = glob.glob(image_name) + glob.glob(script_pattern)
+    # when restart dmtcp will try to create shells in pwd
+    files += glob.glob(os.path.join(context.cwd, script_name))
     return files
 
 
