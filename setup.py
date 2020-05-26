@@ -81,8 +81,8 @@ class build(build_orig):
                     self.build_lib, "cragon", d))
 
     def run(self):
-        super().run()
         self.buildDMTCP()
+        super().run()
 
 
 setup(
