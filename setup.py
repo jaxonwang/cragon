@@ -19,7 +19,7 @@ class DMTCPPlugin(Extension):
         super().__init__(name, sources=[])
 
     @staticmethod
-    def buildDMTCPplugin(build_cmd):
+    def do_build(build_cmd):
         cwd = os.getcwd()
         os.chdir(DMTCP_PLUGIN_DIR)
         # make
@@ -44,31 +44,24 @@ class DMTCPPlugin(Extension):
             distutils.file_util.copy_file(f, dst)
 
 
-class build_ext(build_ext_orig):
-    def run(self):
-        super().run()
+class DMTCP(Extension):
 
-    def build_extension(self, ext):
-        if isinstance(ext, DMTCPPlugin):
-            ext.buildDMTCPplugin(self)
-        else:
-            super().build_extension(ext)
+    def __init__(self, name):
+        super().__init__(name, sources=[])
 
-
-class build(build_orig):
-
-    def buildDMTCP(self):
+    @staticmethod
+    def do_build(build_cmd):
         cwd = os.getcwd()
         os.chdir(DMTCP_DIR)
         # conf
         if not os.path.isfile("Makefile"):  # TODO allow user to config
             configure_shell = os.path.join(DMTCP_DIR, "configure")
-            self.spawn([configure_shell])
+            build_cmd.spawn([configure_shell])
         # make
         make_cmd = ["make"]
-        if self.parallel:
-            make_cmd += ["-j", str(self.parallel)]
-        self.spawn(make_cmd)
+        if build_cmd.parallel:
+            make_cmd += ["-j", str(build_cmd.parallel)]
+        build_cmd.spawn(make_cmd)
 
         os.chdir(cwd)
 
@@ -78,11 +71,15 @@ class build(build_orig):
             distutils.dir_util.copy_tree(
                 os.path.join(
                     DMTCP_s, d), os.path.join(
-                    self.build_lib, "cragon", d))
+                    build_cmd.build_lib, "cragon", d))
 
+
+class build_ext(build_ext_orig):
     def run(self):
-        self.buildDMTCP()
         super().run()
+
+    def build_extension(self, ext):
+        ext.do_build(self)
 
 
 setup(
@@ -93,9 +90,8 @@ setup(
     author_email="jxwang92@gmail.com",
     install_requires=["Click"],
     packages=['cragon'],
-    ext_modules=[DMTCPPlugin("dmtcp_plugin")],
+    ext_modules=[DMTCP("dmtcp"), DMTCPPlugin("dmtcp_plugin")],
     cmdclass={
-        'build': build,
         'build_ext': build_ext,
     },
     entry_points={
