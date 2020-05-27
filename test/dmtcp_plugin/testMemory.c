@@ -1,7 +1,13 @@
 #define _GNU_SOURCE
+// define this to enable reallocarray
+#if __GLIBC_MINOR__ >= 29
+#define _DEFAULT_SOURCE
+#endif
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
+#include <limits.h>
 
 #include <pthread.h>
 #include <sys/mman.h>
@@ -76,9 +82,13 @@ void test_wrapped() {
   int *chunk_calloc = calloc(chunk_size / sizeof(int), sizeof(int));
   printf("Calling realloc.\n");
   chunk_malloc = realloc(chunk_malloc, chunk_size * 2);
+
+  /* reallocarray is introduced in glibc 2.26 */
+  #if __GLIBC_MINOR__ >= 26
   printf("Calling reallocarray.\n");
   chunk_calloc =
       reallocarray(chunk_calloc, chunk_size / sizeof(int), sizeof(int));
+  #endif
   free(chunk_malloc);
   free(chunk_calloc);
 

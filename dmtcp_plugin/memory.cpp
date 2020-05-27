@@ -11,6 +11,7 @@
 
 #include <dlfcn.h>
 #include <unistd.h>
+#include <limits.h>
 
 #include <fcntl.h>
 #include <sys/mman.h>
@@ -256,6 +257,8 @@ void after_realloc(int errnum, void *ret, void *ptr, size_t size) {
 
 CREATE_WRAPPER(realloc, void *, (void *ptr, size_t size), ptr, size)
 
+/* reallocarray is introduced in glibc 2.26 */
+#if __GLIBC_MINOR__ >= 26
 void after_reallocarray(int errnum, void *ret, void *ptr, size_t nmemb,
                         size_t size) {
   if (ret == NULL) {
@@ -264,6 +267,7 @@ void after_reallocarray(int errnum, void *ret, void *ptr, size_t nmemb,
 }
 CREATE_WRAPPER(reallocarray, void *, (void *ptr, size_t nmemb, size_t size),
                ptr, nmemb, size)
+#endif
 
 static void eventHook(DmtcpEvent_t event, DmtcpEventData_t *data) {
   switch (event) {
