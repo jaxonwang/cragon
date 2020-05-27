@@ -44,7 +44,7 @@ void _perror(const char *s, int errnum) {
 int get_logging_fd() {
   static int logging_fd = -1;
   if (logging_fd == -1) {
-    char *evar = secure_getenv(LOGGING_FD_ENV_VAR);
+    char *evar = getenv(LOGGING_FD_ENV_VAR);
     if (!evar) {
       _stderr("LOGGING_FD_ENV_VAR is empty! Log to stdout.\n");
       logging_fd = STDOUT_FILENO;
