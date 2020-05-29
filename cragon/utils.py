@@ -11,8 +11,11 @@ logger = logging.getLogger(__name__)
 def singleton(c):
     instance = None
 
-    def getinstance():
+    def getinstance(*args, **kargs):
         nonlocal instance
+        if "reset_the_singeton" in kargs:
+            instance = None
+            return None
         if not instance:
             instance = c()
         return instance
@@ -20,10 +23,16 @@ def singleton(c):
 
 
 def init_once_singleton(c):
+    # a singleton that should be called with init args before use
+    # and after that should be only called without int args
     instance = None
 
     def getinstance(*args, **kargs):
         nonlocal instance
+        # allow reset for test
+        if "reset_the_singeton" in kargs:
+            instance = None
+            return None
         if instance:
             if args or kargs:
                 raise Exception(

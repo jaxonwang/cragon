@@ -8,7 +8,7 @@ from cragon import context
 from cragon import algorithms
 from cragon import monitor
 from cragon import utils
-from cragon import images
+from cragon import checkpoint_manager
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
@@ -70,8 +70,8 @@ def system_set_up():
     context.tmp_file_created.append(context.tmp_dir)
     logger.debug("Temp folder: %s created." % context.tmp_dir)
 
-    # init image dir
-    utils.create_dir_unless_exist(context.image_dir)
+    # init ckpt dir
+    utils.create_dir_unless_exist(context.ckpt_dir)
 
     # restore directory to create fifo
     if context.fifo_path:
@@ -83,6 +83,9 @@ def system_set_up():
             if not os.path.isdir(start):
                 os.mkdir(start)
                 context.tmp_file_created.append(start)
+
+    # init image maneger
+    checkpoint_manager.CkptManager(checkpoint_manager.KeepLatestN)
 
 
 def system_tear_down():
@@ -123,7 +126,7 @@ class FirstRun(Execution):
                 ckpt_func, context.ckpt_intervals)
 
     def init_common_cmd(self):
-        self.dmtcp_cmd += ["--ckptdir", context.image_dir]
+        self.dmtcp_cmd += ["--ckptdir", context.ckpt_dir]
 
         # built in options
         # using random port num for dmtcp coordinator
@@ -146,7 +149,7 @@ class FirstRun(Execution):
 
         self.init_common_cmd()
 
-        self.dmtcp_cmd.append(context.image_to_restart)
+        self.dmtcp_cmd += context.images_to_restart
 
     def __init__(self, cmd=None, restart=False):
         # the ret code of process to be checkpointed
@@ -245,14 +248,17 @@ class FirstRun(Execution):
 
         self.ckpt_algorithm.stop()
 
-    def execution_info(self):
-        exe_info = {}
-        exe_info["command"] = self.command_to_run
-        exe_info["hostname"] = context.current_host_name
-        exe_info["user"] = context.current_user_name
-        exe_info["data"] = {}
-        exe_info["data"]["fifo_path"] = self.fifo_path
-        return exe_info
+    def gen_ckpt_info(self, ckpt_timestamp=None):
+        ckpt_info = {}
+        ckpt_info["command"] = self.command_to_run
+        ckpt_info["hostname"] = context.current_host_name
+        ckpt_info["user"] = context.current_user_name
+        ckpt_info["data"] = {}
+        ckpt_info["data"]["fifo_path"] = self.fifo_path
+        if ckpt_timestamp:
+            ckpt_info["checkpint_timestamp"] = ckpt_timestamp
+
+        return ckpt_info
 
     def check_point(self):
         # this fun is called in another thread
@@ -272,7 +278,6 @@ class FirstRun(Execution):
             logger.warn("Checkpoint subprocess stderr: %s\n" % err)
         else:
             # TODO add event of ckpt finished
-            # TODO assign id to ckpt images
             time_ckpt_finished = time.time()
-            images.archive_checkpoint(
-                time_ckpt_finished, self.execution_info())
+            checkpoint_manager.CkptManager().make_checkpoint(
+                self.gen_ckpt_info(ckpt_timestamp=time_ckpt_finished))

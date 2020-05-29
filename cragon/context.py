@@ -4,7 +4,7 @@ import getpass
 import socket
 
 from cragon.algorithms import Periodic
-from cragon import images
+from cragon import checkpoint_manager
 
 dmtcp_path = None
 dmtcp_launch = None
@@ -25,8 +25,8 @@ file_date_format = '%Y-%m-%d_%H:%M:%S'
 
 cwd = os.getcwd()
 working_dir = None
-image_dir_name = "checkpoint_images"
-image_dir = None
+ckpt_dir_name = "checkpoint_images"
+ckpt_dir = None
 log_file_name = "cragon.log"
 intercepted_log_name = "intercepted.log"
 ckpt_info_file_name = "checkpoint_info"
@@ -39,7 +39,7 @@ ROOT_DIR = os.path.dirname(os.path.abspath(__file__))
 ckpt_intervals = 60
 ckpt_algorihtm = None
 
-image_to_restart = None
+images_to_restart = None
 fifo_path = None  # guarenteed to be absolute
 # fifo need to restored exactly as last execution, will be init if
 # restart from ckpt in restart_check TODO: should I use another flag to
@@ -63,7 +63,7 @@ def check_failed(msg):
 
 
 def check():
-    global dmtcp_plugins, image_dir, ckpt_algorihtm, ckpt_intervals
+    global dmtcp_plugins, ckpt_dir, ckpt_algorihtm, ckpt_intervals
     global dmtcp_launch, dmtcp_command
 
     # check dmtcp binary path
@@ -83,8 +83,8 @@ def check():
         raise RuntimeError(
             "The working directory: %s does not exist." %
             working_dir)
-    if not image_dir:
-        image_dir = os.path.join(working_dir, image_dir_name)
+    if not ckpt_dir:
+        ckpt_dir = os.path.join(working_dir, ckpt_dir_name)
 
     # check user and hostname
     global current_host_name, current_user_name
@@ -121,13 +121,13 @@ def ckpt_info_check(ckpt_image_dir):
 
 
 def restart_check():
-    global image_to_restart, dmtcp_restart
+    global images_to_restart, dmtcp_restart
 
     # dmtcp restart binary
     dmtcp_restart = os.path.join(dmtcp_path, dmtcp_restart_file_name)
 
-    image_dir = images.latest_image_dir()
-    ckpt_info_check(image_dir)
-    image_to_restart = images.latest_image()
-    if not image_to_restart:
+    img_dir = checkpoint_manager.latest_image_dir()
+    ckpt_info_check(img_dir)
+    images_to_restart = checkpoint_manager.image_files_in_dir(img_dir)
+    if not images_to_restart:
         check_failed("The images to restart can not be found.")
