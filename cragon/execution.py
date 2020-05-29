@@ -262,6 +262,9 @@ class FirstRun(Execution):
 
     def check_point(self):
         # this fun is called in another thread
+        if self.process_dmtcp_wrapped.poll() is not None:
+            logger.log("The process has finished. Do not checkpoint.")
+            return
         logger.debug(
             "Running checkpoint subprocess: %s." % " ".join(self.ckpt_command))
         ckpt_process = subprocess.run(self.ckpt_command,

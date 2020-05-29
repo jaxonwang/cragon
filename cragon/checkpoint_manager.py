@@ -1,4 +1,5 @@
 import os
+import logging
 import json
 import shutil
 import glob
@@ -7,6 +8,9 @@ import re
 
 from cragon import context
 from cragon import utils
+
+logger = logging.getLogger(__name__)
+logger.setLevel(logging.DEBUG)
 
 
 def get_unarchived_images():
@@ -85,6 +89,8 @@ class CkptManager(object):
     def __init__(self, ckpt_policy):
         self.ckpt_policy = ckpt_policy
         self.image_list = None
+        logger.info("Set the checkpoint image management policy: %",
+                    ckpt_policy.__name__)
 
         self.init_records()
 
@@ -93,9 +99,12 @@ class CkptManager(object):
         if self.image_list:
             current_ckpt_id = extract_image_dir_name(self.image_list[-1])[0]
             self.current_ckpt_id = int(current_ckpt_id)
+            logging.debug("Images found: %s" % str(self.image_list))
         else:
             # if dir is empty then start from 0
             self.current_ckpt_id = 0
+        logging.info("Set the current checkpoint id to :%d",
+                     self.current_ckpt_id)
 
     def next_ckpt_id(self):
         self.current_ckpt_id += 1
@@ -113,6 +122,8 @@ class CkptManager(object):
         for f in image_files:
             shutil.move(f, archive_dir_path)
 
+        logger.info("Archiving current checkpoint images to %d" %
+                    archive_dir_path)
         # record exe and ckpt info
         ckpt_info_file = os.path.join(archive_dir_path,
                                       context.ckpt_info_file_name)
