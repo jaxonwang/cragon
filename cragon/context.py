@@ -1,5 +1,6 @@
 import os
 import json
+import datetime
 import getpass
 import socket
 
@@ -21,7 +22,7 @@ tmp_dir = None
 dmtcp_plugin_name = "libcragon_exeinfo.so"
 cragon_lib_dirname = "lib"
 
-file_date_format = '%Y-%m-%d_%H:%M:%S'
+file_date_format = '%Y-%m-%d_%H:%M:%S,%f'
 
 cwd = os.getcwd()
 working_dir = None
@@ -39,6 +40,8 @@ ROOT_DIR = os.path.dirname(os.path.abspath(__file__))
 ckpt_intervals = 60
 ckpt_algorihtm = None
 
+command = None
+image_dir_to_restart = None
 images_to_restart = None
 fifo_path = None  # guarenteed to be absolute
 # fifo need to restored exactly as last execution, will be init if
@@ -62,6 +65,37 @@ def check_failed(msg):
     raise StartUpCheckError(msg)
 
 
+def check_working_directory_legal(wdir):
+    # check if a existing working directory is created by cragon
+    if not os.path.isdir(wdir):
+        return False
+    checkpoint_dir = os.path.join(wdir, ckpt_dir_name)
+    if not os.path.isdir(checkpoint_dir):
+        return False
+    cragon_log_file = os.path.join(wdir, log_file_name)
+    if not os.path.isfile(cragon_log_file):
+        return False
+    return True
+
+
+def check_image_directory_legal(idir):
+    if not checkpoint_manager.image_files_in_dir(idir):
+        return False
+    if not os.path.isfile(os.path.join(idir, ckpt_info_file_name)):
+        return False
+    return True
+
+
+def create_working_directory_in_cwd(command):
+    global working_dir
+    date_str = datetime.datetime.now().strftime(file_date_format)
+    # get the correct command file
+    cmdname = os.path.basename(command)
+    working_dir = os.path.join(
+        cwd, "cragon_{}_{}".format(cmdname, date_str))
+    os.mkdir(working_dir)
+
+
 def check():
     global dmtcp_plugins, ckpt_dir, ckpt_algorihtm, ckpt_intervals
     global dmtcp_launch, dmtcp_command
@@ -80,6 +114,7 @@ def check():
 
     # check working directory
     if not os.path.isdir(working_dir):
+        # existance has been checked in cli module
         raise RuntimeError(
             "The working directory: %s does not exist." %
             working_dir)
@@ -95,6 +130,7 @@ def check():
     if ckpt_intervals:
         ckpt_algorihtm = Periodic
 
+    # TODO move to cli check when more algorithms are introduced in the future
     if not ckpt_algorihtm:
         check_failed("Should at least specity a ckpt algorithm or intervals.")
     if ckpt_algorihtm is Periodic:
@@ -103,31 +139,42 @@ def check():
                 "Periodic checkpoint should specify intervals option.")
 
 
-def ckpt_info_check(ckpt_image_dir):
+def load_last_ckpt_info(ckpt_image_dir):
     global last_ckpt_info
-
     ckpt_info_file_path = os.path.join(ckpt_image_dir, ckpt_info_file_name)
     if not os.path.isfile(ckpt_info_file_path):
-        check_failed("The checkpoint info file: %s is missing" %
+        check_failed(("Can not find checkpoint info file: %s."
+                      " Did you give correct --working-directory"
+                      " or image directory to restart?") %
                      ckpt_info_file_path)
     with open(ckpt_info_file_path, "r") as f:
         last_ckpt_info = json.load(f)
 
-    global fifo_path
+
+def ckpt_info_check(ckpt_image_dir):
+    global last_ckpt_info, command, fifo_path
+    if not last_ckpt_info:
+        load_last_ckpt_info(ckpt_image_dir)
     fifo_path = last_ckpt_info["data"]["fifo_path"]
+
     # should be cleaned from last execution
     if os.path.exists(fifo_path):
-        check_failed("Fifo file %s exist." % fifo_path)
+        check_failed("Fifo file %s exists." % fifo_path)
+
+    # record the command
+    command = last_ckpt_info["command"]
 
 
 def restart_check():
-    global images_to_restart, dmtcp_restart
+    global images_to_restart, dmtcp_restart, image_dir_to_restart
 
     # dmtcp restart binary
     dmtcp_restart = os.path.join(dmtcp_path, dmtcp_restart_file_name)
 
-    img_dir = checkpoint_manager.latest_image_dir()
-    ckpt_info_check(img_dir)
-    images_to_restart = checkpoint_manager.image_files_in_dir(img_dir)
+    if not image_dir_to_restart:
+        image_dir_to_restart = checkpoint_manager.latest_image_dir()
+    ckpt_info_check(image_dir_to_restart)
+    images_to_restart = checkpoint_manager.\
+        image_files_in_dir(image_dir_to_restart)
     if not images_to_restart:
         check_failed("The images to restart can not be found.")

@@ -55,6 +55,27 @@ class Execution(object):
         pass
 
 
+def start_all(is_restart):
+
+    # check system
+    context.check()
+    if is_restart:
+        context.restart_check()
+
+    # start all
+    system_set_up()
+    retcode = 1
+    try:
+        with FirstRun(restart=is_restart) as r:
+            r.run()
+            retcode = r.returncode
+    finally:
+        system_tear_down()
+
+    # return result of subprocess
+    exit(retcode)
+
+
 def system_set_up():
     # config root logger
     log_file_path = os.path.join(context.working_dir, context.log_file_name)
@@ -151,7 +172,7 @@ class FirstRun(Execution):
 
         self.dmtcp_cmd += context.images_to_restart
 
-    def __init__(self, cmd=None, restart=False):
+    def __init__(self, restart=False):
         # the ret code of process to be checkpointed
         self.returncode = None
         # using localhost as coordinator
@@ -161,14 +182,12 @@ class FirstRun(Execution):
         # record isrestart
         self.isrestart = restart
         # the command of process to run
-        self.command_to_run = None
+        self.command_to_run = context.command
 
         # init cmd
         if self.isrestart:
-            self.command_to_run = context.last_ckpt_info["command"]
             self.init_restart_cmd()
         else:
-            self.command_to_run = cmd
             self.init_first_run_cmd()
 
         # init algorithm

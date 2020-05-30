@@ -1,9 +1,6 @@
 import logging
 import os
 import threading
-import time
-
-from cragon import context  # TODO circular import
 
 logger = logging.getLogger(__name__)
 
@@ -71,9 +68,8 @@ def create_dir_unless_exist(path):
             FATAL("Can not create dir: {}".format(path), e)
 
 
-def format_time_to_readable(timestamp):
-    lt = time.localtime(timestamp)
-    return time.strftime(context.file_date_format, lt)
+def get_command_basename(cmd):
+    return os.path.basename(cmd)
 
 
 def FATAL(msg="", e=None):

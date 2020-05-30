@@ -35,7 +35,7 @@ def extract_image_dir_name(image_dir_name):
     if not matched:
         return None
     else:
-        return (matched.group(1),
+        return (int(matched.group(1)),
                 matched.group(2),
                 matched.group(3))
 
@@ -89,7 +89,7 @@ class CkptManager(object):
     def __init__(self, ckpt_policy):
         self.ckpt_policy = ckpt_policy
         self.image_list = None
-        logger.info("Set the checkpoint image management policy: %",
+        logger.info("Set the checkpoint image management policy: %s",
                     ckpt_policy.__name__)
 
         self.init_records()
@@ -122,7 +122,7 @@ class CkptManager(object):
         for f in image_files:
             shutil.move(f, archive_dir_path)
 
-        logger.info("Archiving current checkpoint images to %d" %
+        logger.info("Archiving current checkpoint images to %s" %
                     archive_dir_path)
         # record exe and ckpt info
         ckpt_info_file = os.path.join(archive_dir_path,

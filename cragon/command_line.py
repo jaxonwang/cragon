@@ -1,13 +1,15 @@
 import click
-import datetime
+import pathlib
 import os
 import sys
 
+from cragon import utils
 from cragon import context
 from cragon import execution
+from cragon import checkpoint_manager
 
 
-def err_exit(err_msg):
+def bad_args_exit(err_msg):
     click.echo(err_msg, err=True)
     sys.exit(2)
 
@@ -17,27 +19,42 @@ dmtcp_file_check = [
     context.dmtcp_command_file_name,
     context.dmtcp_restart_file_name]
 
+example_str = \
+    """
+Examples:
 
-@click.command()
+    To start a command:
+        cragon command arg1 arg2 arg3 ...
+    To restart from the latest checkpoint in Cragon working directory:
+        cragon -w cragon_command_YYYY-mm-dd_HH:MM:SS/
+    To restart from a specific checkpoint:
+        cragon cragon_working_dir/{ckpt_dir_name}/id_user@host/
+""".format(ckpt_dir_name=context.ckpt_dir_name)
+
+
+@click.group()
+def cli(**args):
+    "Checkpoint and restore tool."
+
+
 @click.option('-p', '--dmtcp-path', type=click.Path(exists=True),
               help="DMTCP binary path")
 @click.option('-i', '--intervals', type=click.FLOAT,
               help=("Time in second(s) between checkpoints"
                     " in the naive checkpoint algorithm."))
-@click.option('-r', '--restart', is_flag=True, default=False,
-              help=("If specified, cragon will rerun from current directory or"
-                    " working directory specified in -w/--working-directory"))
-@click.option('-w', '--working-directory', type=click.Path(exists=True),
-              help=("cragon working directory where"
-                    " checkpoint images and logs are stored"))
-@click.argument('commands', nargs=-1)
-def cli(**args):
-    "Checkpoint and restore tool."
+def common_options(f):
+    # hack to reuse options
+    param_list = common_options.__click_params__
+    if isinstance(f, click.Command):
+        f.params += param_list
+    else:
+        if not hasattr(f, "__click_params__"):
+            f.__click_params__ = []
+        f.__click_params__ += param_list
+    return f
 
-    is_restart = args["restart"]
-
-    # check execution path
-    dmtcp_path = args["dmtcp_path"]
+def check_dmtcp_path(dmtcp_path):
+    dmtcp_path = dmtcp_path
     if not dmtcp_path:
         dmtcp_path = os.path.join(context.ROOT_DIR, "bin")
     dmtcp_path = os.path.abspath(dmtcp_path)
@@ -46,28 +63,35 @@ def cli(**args):
                       for f in dmtcp_file_check]
     for f in files_to_check:
         if not os.path.isfile(f):
-            if not args["dmtcp_path"]:
-                err_exit(
+            if not dmtcp_path:
+                bad_args_exit(
                     "File: {} not found. Please specify --dmtcp-path PATH.".format(f))
             else:
-                err_exit("File: {} not found.".format(f))
+                bad_args_exit("File: {} not found.".format(f))
     context.dmtcp_path = dmtcp_path
 
+@cli.command()
+@click.option('-w', '--working-directory', type=click.Path(exists=True),
+              help=("Cragon working directory where"
+                    " checkpoint images and logs are stored. If not specified,"
+                    "Cragon will create a new directory in current working "
+                    "directory"))
+@click.argument('command', nargs=1, required=True)
+@click.argument('args', nargs=-1)
+@common_options
+def run(**args):
+    "Run the command to be automatically checkpointed."
+
+    check_dmtcp_path(args["dmtcp_path"])
+
     # get commands to execute
-    commands = args["commands"]
-    if not is_restart and not commands:
-        err_exit("Please specify command to run, or start with checkpoint directory")
+    command = [args["command"]] + list(args["args"])
+    context.command = command
 
     # check working directory
-    if is_restart and not args["working_directory"]:
-        err_exit("Please working directory from which cragon start.")
-    elif not args["working_directory"]:
-        date_str = datetime.datetime.now().strftime(context.file_date_format)
-        # get the correct command file
-        cmdname = os.path.basename(commands[0])
-        context.working_dir = os.path.join(
-            context.cwd, "cragon_{}_{}".format(cmdname, date_str))
-        os.mkdir(context.working_dir)
+    if not args["working_directory"]:
+        cmd_basename = utils.get_command_basename(args["command"])
+        context.create_working_directory_in_cwd(cmd_basename)
     else:
         context.working_dir = args["working_directory"]
 
@@ -75,28 +99,56 @@ def cli(**args):
     if args["intervals"]:
         context.ckpt_intervals = float(args["intervals"])
 
-    # check system
-    context.check()
-    if is_restart:
-        context.restart_check()
+    execution.start_all(is_restart=False)
 
-    # start all
-    execution.system_set_up()
-    retcode = 1
-    try:
-        with execution.FirstRun(cmd=commands, restart=is_restart) as r:
-            r.run()
-            retcode = r.returncode
-    finally:
-        execution.system_tear_down()
+@cli.command()
+@click.option('-w', '--working-directory', type=click.Path(exists=True),
+              help=("Cragon working directory where"
+                    " checkpoint images and logs are stored. If not given "
+                    "images, Cragon will find the latest checkpoint in the "
+                    "working directory to restart"))
+@click.argument('image_dir', nargs=1, required=False,
+                type=click.Path(exists=True))
+@common_options
+def restart(**args):
+    "Restart from a chekpoint."
 
-    # return result of subprocess
-    exit(retcode)
+    check_dmtcp_path(args["dmtcp_path"])
 
+    image_dir = args["image_dir"]
+    wdir = args["working_directory"]
+    # check working directory
+    if not image_dir and not wdir:
+        bad_args_exit(("Please working directory or checkpoint directory "
+                 "from which Cragon start."))
+    elif not wdir:
+        # check image to restart, and fetch the commands to create wdir
+        if not context.check_image_directory_legal(image_dir):
+            bad_args_exit("%s doesn't seem to be a Cragon image directory." %
+                        wdir)
 
-def main():
-    cli()
+        # check whether image is in cragon working directory
+        p = str(pathlib.Path(image_dir).parent.parent.absolute())
+        if not context.check_working_directory_legal(p):
+            context.load_last_ckpt_info(image_dir)
+            cmd_basename = utils.get_command_basename(
+                context.last_ckpt_info["command"])
+            context.create_working_directory_in_cwd(cmd_basename)
+        else:
+            context.working_dir = p
+        context.image_dir_to_restart = image_dir
+    else:
+        # find latest
+        if not context.check_working_directory_legal(wdir):
+            bad_args_exit("%s doesn't seem to be a Cragon working directoy." %
+                        wdir)
+        context.working_dir=wdir
 
+    # check ckpt algorihtms
+    if args["intervals"]:
+        context.ckpt_intervals = float(args["intervals"])
+
+    execution.start_all(is_restart=True)
 
 if __name__ == '__main__':
-    main()
+    cli()
