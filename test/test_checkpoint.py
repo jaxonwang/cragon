@@ -9,7 +9,7 @@ def test_checkpoint_pi_estimation(tmpdir, capfd):
         "checkpoint",
         "pi_est.py")
 
-    cmd = ["-w", str(tmpdir), "python", binary_path, "100000"]
+    cmd = ["run", "-w", str(tmpdir), "python", binary_path, "100000"]
     ret = integrated_test.run_cragon_cli(cmd)
     assert ret.returncode == 0
 

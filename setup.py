@@ -94,6 +94,6 @@ setup(
         'build_ext': build_ext,
     },
     entry_points={
-        'console_scripts': ['cragon=cragon.command_line:main'],
+        'console_scripts': ['cragon=cragon.command_line:cli'],
     },
 )

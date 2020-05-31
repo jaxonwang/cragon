@@ -10,8 +10,8 @@
 #include <cstring>
 
 #include <dlfcn.h>
-#include <unistd.h>
 #include <limits.h>
+#include <unistd.h>
 
 #include <fcntl.h>
 #include <sys/mman.h>
@@ -195,13 +195,13 @@ _EXTC void *mremap(void *old_address, size_t old_size, size_t new_size,
   va_start(al, flags);
   void *ret;
 
-  void * newaddr = 0;
+  void *newaddr = 0;
 
   bool nowtrapped = trapped.test_and_set();
   if (flags & MREMAP_FIXED) {
     newaddr = va_arg(al, void *);
-    ret = NEXT_FNC(mremap)(old_address, old_size, new_size, flags,
-                           newaddr);
+
+    ret = NEXT_FNC(mremap)(old_address, old_size, new_size, flags, newaddr);
   } else {
     ret = NEXT_FNC(mremap)(old_address, old_size, new_size, flags);
   }
@@ -209,7 +209,8 @@ _EXTC void *mremap(void *old_address, size_t old_size, size_t new_size,
     int stored_errno = errno;
     DEBUG_INFO("mremap", stored_errno, ret, old_address, old_size, new_size,
                flags, newaddr);
-    after_mremap(stored_errno, ret, old_address, old_size, new_size, flags, al, newaddr);
+    after_mremap(stored_errno, ret, old_address, old_size, new_size, flags,
+                 newaddr);
     errno = stored_errno;
     trapped.clear();
   }
