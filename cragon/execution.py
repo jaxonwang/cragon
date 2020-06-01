@@ -5,6 +5,7 @@ import tempfile
 import logging
 
 from cragon import context
+from cragon import states
 from cragon import algorithms
 from cragon import monitor
 from cragon import utils
@@ -86,6 +87,9 @@ def system_set_up():
     handler.setFormatter(formatter)
     logging.basicConfig(handlers=[handler])
 
+    # change state
+    states.setStartUp()
+
     # init tmp dir
     context.tmp_dir = tempfile.mkdtemp()
     context.tmp_file_created.append(context.tmp_dir)
@@ -110,7 +114,6 @@ def system_set_up():
 
 
 def system_tear_down():
-    logger.debug("Start cleanning before exit.")
     for f in context.tmp_file_created[::-1]:
         logger.debug("Trying to delete :%s if exist." % f)
         utils.safe_clean_file(f)
@@ -140,11 +143,12 @@ class FirstRun(Execution):
         self.ckpt_command.append("-bc")
 
     def init_ckpt_algorithm(self):
-        def ckpt_func(): return FirstRun.check_point(self)
+        def ckpt_func(): return FirstRun.checkpoint(self)
+        def stop_ckpt_func(): return FirstRun.stop_checkpoint(self)
         # TODO: this line sucks
         if context.ckpt_algorihtm is algorithms.Periodic:
             self.ckpt_algorithm = context.ckpt_algorihtm(
-                ckpt_func, context.ckpt_intervals)
+                ckpt_func, stop_ckpt_func, context.ckpt_intervals)
 
     def init_common_cmd(self):
         self.dmtcp_cmd += ["--ckptdir", context.ckpt_dir]
@@ -183,6 +187,8 @@ class FirstRun(Execution):
         self.isrestart = restart
         # the command of process to run
         self.command_to_run = context.command
+        # ckpt process, saved for easy manipulation
+        self.ckpt_process = None
 
         # init cmd
         if self.isrestart:
@@ -237,6 +243,8 @@ class FirstRun(Execution):
 
     def __exit__(self, type, value, traceback):
         # should never raise here, clean carefully
+        states.setTearDwon()
+
         if self.intercept_monitor:
             self.intercept_monitor.stop()
             del self.intercept_monitor
@@ -251,6 +259,9 @@ class FirstRun(Execution):
     def run(self):
         logger.info("Start executing: %s" % " ".join(self.command_to_run))
         logger.debug("Run DMTCP: %s" % " ".join(self.dmtcp_cmd))
+
+        states.setProcessRunning()
+
         self.process_dmtcp_wrapped = subprocess.Popen(self.dmtcp_cmd)
         self.wait_for_port_file_available()
         self.init_ckpt_command(self.dmtcp_coordinator_host, self.dmtcp_port)
@@ -260,6 +271,9 @@ class FirstRun(Execution):
         self.ckpt_algorithm.start()
 
         self.process_dmtcp_wrapped.wait()
+
+        states.setProcessFinished()
+
         self.returncode = self.process_dmtcp_wrapped.returncode
         logger.info(
             "Process to be checkpointed finished with ret code :%d." %
@@ -279,23 +293,29 @@ class FirstRun(Execution):
 
         return ckpt_info
 
-    def check_point(self):
+    def checkpoint(self):
         # this fun is called in another thread
-        if self.process_dmtcp_wrapped.poll() is not None:
-            logger.log("The process has finished. Do not checkpoint.")
+        try:
+            states.setCheckpointing()
+        except AssertionError:
+            # either system is checkpointing or process has finished
+            logger.info("The system is in state %s. Do not checkpoint." %
+                        states.get_current_state().name)
             return
+
         logger.debug(
             "Running checkpoint subprocess: %s." % " ".join(self.ckpt_command))
-        ckpt_process = subprocess.run(self.ckpt_command,
-                                      stdout=subprocess.PIPE,
-                                      stderr=subprocess.PIPE)
+        self.ckpt_process = subprocess.Popen(self.ckpt_command,
+                                           stdout=subprocess.PIPE,
+                                           stderr=subprocess.PIPE)
+        self.ckpt_process.wait()
         logger.debug("Checkpoint subprocess: %s finished with ret code:%d." % (
-            " ".join(self.ckpt_command), ckpt_process.returncode))
+            " ".join(self.ckpt_command), self.ckpt_process.returncode))
 
-        out, err = ckpt_process.stdout, ckpt_process.stderr
-        if ckpt_process.returncode != 0:
+        out, err = self.ckpt_process.stdout, self.ckpt_process.stderr
+        if self.ckpt_process.returncode != 0:
             logger.warn("Checkpoint subprocess failed with return code: %d" %
-                        ckpt_process.returncode)
+                        self.ckpt_process.returncode)
             logger.warn("Checkpoint subprocess stdout: %s\n" % out)
             logger.warn("Checkpoint subprocess stderr: %s\n" % err)
         else:
@@ -303,3 +323,19 @@ class FirstRun(Execution):
             time_ckpt_finished = time.time()
             checkpoint_manager.CkptManager().make_checkpoint(
                 self.gen_ckpt_info(ckpt_timestamp=time_ckpt_finished))
+
+        self.ckpt_process = None
+
+        try:
+            # revert state
+            states.setProcessRunning()
+        except AssertionError:
+            # can be finished or enter another checkpoint
+            pass
+
+    def stop_checkpoint(self):
+        # stop the running checkpoint process
+        if self.ckpt_process and self.ckpt_process.poll() is None:
+            # still running
+            self.ckpt_process.terminate()
+            logger.debug("Kill the running checkpointing since the process has finished.")

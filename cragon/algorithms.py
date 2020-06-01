@@ -16,15 +16,17 @@ class CkptAlgorithms(utils.StoppableService):
 
 class Periodic(CkptAlgorithms):
 
-    def __init__(self, do_ckpt_func, interval):
+    def __init__(self, do_ckpt_func, stop_ckpt_func, interval):
         super().__init__()
         self.interval = interval
         self.stop_flag = threading.Event()
         self.do_ckpt_func = do_ckpt_func
+        self.stop_ckpt_func = stop_ckpt_func
         self.thread = None
 
     def loop_body(self):
         while(True):
+            # TODO take ckpt time into account
             self.stop_flag.wait(self.interval)
             if(self.stop_flag.isSet()):
                 break
@@ -36,5 +38,10 @@ class Periodic(CkptAlgorithms):
 
     def checkpoint(self):
         logger.info("Start checkpointing...")
-        self.do_ckpt_func()  # TODO take ckpt time into account
+        self.do_ckpt_func()
         logger.info("Checkpoint done.")
+
+    def stop(self):
+        # kill the checkpointing first
+        self.stop_ckpt_func()
+        super().stop()
