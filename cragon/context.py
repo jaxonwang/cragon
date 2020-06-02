@@ -168,13 +168,19 @@ def ckpt_info_check(ckpt_image_dir):
 def restart_check():
     global images_to_restart, dmtcp_restart, image_dir_to_restart
 
+    bad_working_dir_s = \
+        "The images to restart can not be found. Did you give correct\
+        --working-directory or image directory to restart?"
+
     # dmtcp restart binary
     dmtcp_restart = os.path.join(dmtcp_path, dmtcp_restart_file_name)
 
     if not image_dir_to_restart:
         image_dir_to_restart = checkpoint_manager.latest_image_dir()
+    if not image_dir_to_restart:
+        check_failed(bad_working_dir_s)
     ckpt_info_check(image_dir_to_restart)
     images_to_restart = checkpoint_manager.\
         image_files_in_dir(image_dir_to_restart)
     if not images_to_restart:
-        check_failed("The images to restart can not be found.")
+        check_failed(bad_working_dir_s)
