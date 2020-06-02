@@ -234,7 +234,8 @@ class FirstRun(Execution):
         try:
             int(port)
         except Exception as e:
-            utils.FATAL("Reading dmtcp port number error", e)
+            utils.FATAL("Reading dmtcp port number error,\
+                        dmtcp does not start normally", e)
         self.dmtcp_port = port
         logger.debug("Suceesfully retrieved port: %s", self.dmtcp_port)
 
@@ -306,8 +307,8 @@ class FirstRun(Execution):
         logger.debug(
             "Running checkpoint subprocess: %s." % " ".join(self.ckpt_command))
         self.ckpt_process = subprocess.Popen(self.ckpt_command,
-                                           stdout=subprocess.PIPE,
-                                           stderr=subprocess.PIPE)
+                                             stdout=subprocess.PIPE,
+                                             stderr=subprocess.PIPE)
         self.ckpt_process.wait()
         logger.debug("Checkpoint subprocess: %s finished with ret code:%d." % (
             " ".join(self.ckpt_command), self.ckpt_process.returncode))
@@ -338,4 +339,5 @@ class FirstRun(Execution):
         if self.ckpt_process and self.ckpt_process.poll() is None:
             # still running
             self.ckpt_process.terminate()
-            logger.debug("Kill the running checkpointing since the process has finished.")
+            logger.debug(
+                "Kill the running checkpointing since the process has finished.")
