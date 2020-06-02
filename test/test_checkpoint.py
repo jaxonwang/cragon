@@ -18,7 +18,7 @@ def test_checkpoint_pi_estimation_py_no_checkpoint(tmpdir, capfd):
     assert pi < 3.2 and pi > 3.1
 
 
-def test_checkpoint_pi_estimation_no_checkpoint(tmpdir, capfd):
+def test_checkpoint_pi_estimation_no_checkpoint(tmpdir, capfd, build_test):
     binary_path = os.path.join(
         integrated_test.checkpoint_bin_dir, "PiEst")
 
@@ -31,8 +31,8 @@ def test_checkpoint_pi_estimation_no_checkpoint(tmpdir, capfd):
     assert pi < 3.2 and pi > 3.1
 
 
-def test_checkpoint_pi_estimation(tmpdir, capfd):
-    interval = 0.03
+def test_checkpoint_pi_estimation(tmpdir, capfd, build_test):
+    interval = 0.02
     working_dir = str(tmpdir)
     binary_path = os.path.join(
         integrated_test.checkpoint_bin_dir, "PiEst")
