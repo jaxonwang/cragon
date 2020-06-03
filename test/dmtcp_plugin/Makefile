@@ -1,6 +1,7 @@
 CFLAGS := -Wall -Wextra -Wno-long-long -Wpedantic -std=c99
-CXXFLAGS := -Wall -Wextra -Wno-long-long -Wpedantic -std=c++11 -lstdc++
+CXXFLAGS := -Wall -Wextra -Wno-long-long -Wpedantic -std=c++11
 CC := cc
+CXX := g++
 BIN_DIR := bin
 
 default: all
@@ -10,7 +11,7 @@ $(BIN_DIR)/CtestMemory: testMemory.c
 	$(CC) $(CFLAGS) -pthread $^ -o $@
 $(BIN_DIR)/CppTestMemory: cppTestMemory.cpp
 	if [ ! -d $(BIN_DIR) ]; then mkdir -p $(BIN_DIR); fi
-	$(CC) $(CXXFLAGS) $^ -o $@
+	$(CXX) $(CXXFLAGS) $^ -o $@
 $(BIN_DIR)/BadMemoryCall: badMemoryCall.c
 	if [ ! -d $(BIN_DIR) ]; then mkdir -p $(BIN_DIR); fi
 	$(CC) $(CFLAGS) $^ -o $@

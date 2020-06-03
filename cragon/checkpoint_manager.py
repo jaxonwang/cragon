@@ -66,7 +66,8 @@ def latest_image_dir():
 
 def image_files_in_dir(img_dir):
     images = list(pathlib.Path(img_dir).glob("*.dmtcp"))
-    return [str(i.absolute()) for i in images]
+    # sort to make sure return the same file list for a dir
+    return sorted([str(i.absolute()) for i in images])
 
 
 class ImageUpdatePolicy(object):
