@@ -62,7 +62,9 @@ def setStartUp():
 
 
 def setTearDwon():
-    __transform([State.PROCESS_FINISHED], State.TEARDOWN)
+    # teardown can transfrom from startup and running when something error
+    __transform([State.STARTUP, State.PROCESS_RUNNING,
+                 State.PROCESS_FINISHED], State.TEARDOWN)
 
 
 def setProcessRunning():

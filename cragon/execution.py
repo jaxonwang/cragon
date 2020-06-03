@@ -234,8 +234,8 @@ class FirstRun(Execution):
         try:
             int(port)
         except Exception as e:
-            utils.FATAL("Reading dmtcp port number error,\
-                        dmtcp does not start normally", e)
+            utils.FATAL(("Reading dmtcp port number error,"
+                        " dmtcp does not start normally"), e)
         self.dmtcp_port = port
         logger.debug("Suceesfully retrieved port: %s", self.dmtcp_port)
 
@@ -339,5 +339,6 @@ class FirstRun(Execution):
         if self.ckpt_process and self.ckpt_process.poll() is None:
             # still running
             self.ckpt_process.terminate()
-            logger.debug(
-                "Kill the running checkpointing since the process has finished.")
+            logger.debug((
+                "Kill the running checkpointing"
+                " since the process has finished."))

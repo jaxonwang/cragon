@@ -169,8 +169,8 @@ def restart_check():
     global images_to_restart, dmtcp_restart, image_dir_to_restart
 
     bad_working_dir_s = \
-        "The images to restart can not be found. Did you give correct\
-        --working-directory or image directory to restart?"
+        ("The images to restart can not be found. Did you give correct"
+         "--working-directory or image directory to restart?")
 
     # dmtcp restart binary
     dmtcp_restart = os.path.join(dmtcp_path, dmtcp_restart_file_name)
