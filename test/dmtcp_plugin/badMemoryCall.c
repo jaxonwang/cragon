@@ -17,15 +17,17 @@
 #include <sys/wait.h>
 
 void test_wrapped() {
-  // large enough to allow small memory success, since dmtcp
-  // will consume some mem
-  const int memory_allowed = 4096 * 1024 * 5;
+  // 100MB, a test value otherwise: DMTCP(../jalib/jalloc.cpp): _alloc_raw: : Cannot allocate memory
+  // VMPeak for this in kernel v4.5.0 is around 94MB, which is similar to the one run without my plugin,
+  // But there is no error if dmtcp_launch without my plugin
+  // Need to figure out in the future
+  const int memory_allowed = 4096 * 1024 * 25;
   const int small_memory = 4096;
 
   struct rlimit mem_limit;
   mem_limit.rlim_cur = memory_allowed;
   mem_limit.rlim_max = memory_allowed;
-  if (-1 == setrlimit(RLIMIT_DATA, &mem_limit)) {
+  if (-1 == setrlimit(RLIMIT_AS, &mem_limit)) {
     perror("setrlimit");
   }
   printf("Set RLIMIT_DATA to %d bytes.\n", memory_allowed);

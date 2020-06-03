@@ -1,6 +1,7 @@
 # tool macros
 CC := cc # FILL: the compiler
-CCFLAG := -shared -lstdc++ # FILL: compile flags
+CXX := g++ # FILL: the compiler
+CCFLAG := -shared # FILL: compile flags
 DBGFLAG := -g -DDEBUG
 INCLUDE = -I../dmtcp/include
 CCOBJFLAG := $(CCFLAG) --std=c++11 -c -fPIC -Wall -Wextra -Wno-long-long $(INCLUDE)
@@ -33,19 +34,19 @@ default: all
 
 # non-phony targets
 $(TARGET): $(OBJ)
-	$(CC) $(CCFLAG) -o $@ $?
+	$(CXX) $(CCFLAG) -o $@ $?
 
 $(OBJ_PATH)/%.o: $(SRC_PATH)/%.cpp*
-	$(CC) $(CCOBJFLAG) -o $@ $<
+	$(CXX) $(CCOBJFLAG) -o $@ $<
 
 debug_dir: 
 	$(MKDIR) $(DBG_PATH)
 
 $(DBG_PATH)/%.o: $(SRC_PATH)/%.cpp* debug_dir 
-	$(CC) $(CCOBJFLAG) $(DBGFLAG) -o $@ $<
+	$(CXX) $(CCOBJFLAG) $(DBGFLAG) -o $@ $<
 
 $(TARGET_DEBUG): $(OBJ_DEBUG)
-	$(CC) $(CCFLAG) $(DBGFLAG) $? -o $@
+	$(CXX) $(CCFLAG) $(DBGFLAG) $? -o $@
 
 # phony rules
 .PHONY: all
