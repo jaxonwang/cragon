@@ -1,10 +1,8 @@
 # tool macros
-CC := cc # FILL: the compiler
-CXX := g++ # FILL: the compiler
 CCFLAG := -shared # FILL: compile flags
 DBGFLAG := -g -DDEBUG
 INCLUDE = -I../dmtcp/include
-CCOBJFLAG := $(CCFLAG) --std=c++11 -c -fPIC -Wall -Wextra -Wno-long-long $(INCLUDE)
+CCOBJFLAG := $(CCFLAG) -std=c++11 -c -fPIC -Wall -Wextra -Wno-long-long $(INCLUDE)
 MKDIR := mkdir -p
 
 # path macros

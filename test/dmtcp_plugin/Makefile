@@ -1,7 +1,5 @@
 CFLAGS := -Wall -Wextra -Wno-long-long -Wpedantic -std=c99
 CXXFLAGS := -Wall -Wextra -Wno-long-long -Wpedantic -std=c++11
-CC := cc
-CXX := g++
 BIN_DIR := bin
 
 default: all
