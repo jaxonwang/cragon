@@ -2,17 +2,6 @@ language: python
 jobs:
   include:
     - python: 3.6
-      dist: precise 
-      addons:
-        apt:
-          sources:
-            - ubuntu-toolchain-r-test
-          packages:
-            - g++-4.9
-      env:
-         - MATRIX_EVAL="CC=gcc-4.9 && CXX=g++-4.9"
-
-    - python: 3.6
       dist: trusty
       addons:
         apt:
