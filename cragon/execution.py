@@ -10,6 +10,7 @@ from cragon import algorithms
 from cragon import monitor
 from cragon import utils
 from cragon import checkpoint_manager
+from cragon import signals
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
@@ -257,13 +258,37 @@ class FirstRun(Execution):
 
         return True
 
-    def run(self):
+    def start_process(self):
         logger.info("Start executing: %s" % " ".join(self.command_to_run))
         logger.debug("Run DMTCP: %s" % " ".join(self.dmtcp_cmd))
 
         states.setProcessRunning()
 
         self.process_dmtcp_wrapped = subprocess.Popen(self.dmtcp_cmd)
+
+    def wait_process(self):
+
+        siginfo = os.waitid(os.P_PID, self.process_dmtcp_wrapped.pid,
+                            os.WEXITED|os.WNOWAIT)
+        self.process_dmtcp_wrapped.wait()
+
+        states.setProcessFinished()
+
+        CLD_KILLED = 3
+
+        if siginfo.si_code == CLD_KILLED:
+            utils.stderr_and_log("Process recevied signal: %s" %
+                                 signals.strsignal(siginfo.si_status), logger)
+
+        self.returncode = self.process_dmtcp_wrapped.returncode
+        logger.info(
+            "Process to be checkpointed finished with ret code :%d." %
+            self.returncode)
+
+    def run(self):
+        # start
+        self.start_process()
+
         self.wait_for_port_file_available()
         self.init_ckpt_command(self.dmtcp_coordinator_host, self.dmtcp_port)
 
@@ -271,14 +296,8 @@ class FirstRun(Execution):
 
         self.ckpt_algorithm.start()
 
-        self.process_dmtcp_wrapped.wait()
-
-        states.setProcessFinished()
-
-        self.returncode = self.process_dmtcp_wrapped.returncode
-        logger.info(
-            "Process to be checkpointed finished with ret code :%d." %
-            self.returncode)
+        # finish
+        self.wait_process()
 
         self.ckpt_algorithm.stop()
 

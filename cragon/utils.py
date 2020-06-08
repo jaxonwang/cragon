@@ -1,5 +1,6 @@
 import logging
 import os
+import sys
 import threading
 
 logger = logging.getLogger(__name__)
@@ -81,6 +82,11 @@ def FATAL(msg="", e=None):
     if not e:
         e = RuntimeError("FATAL:" + msg)
     raise(e)
+
+
+def stderr_and_log(s, logger):
+    print(s, file=sys.stderr)
+    logger.warning(s)
 
 
 class AutoStopService(object):

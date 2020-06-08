@@ -1,6 +1,5 @@
 
-int main(int argc, const char *argv[])
+int main()
 {
-    int a = *(int *)(-1);
-    return 0;
+    return *(int *)(-1);
 }

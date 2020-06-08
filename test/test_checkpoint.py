@@ -53,3 +53,15 @@ def test_checkpoint_pi_estimation(tmpdir, capfd, build_test):
     pi2, err = capfd.readouterr()
 
     assert pi1 == pi2
+
+
+def test_seg_fault(tmpdir, capfd, build_test):
+    working_dir = str(tmpdir)
+    binary_path = os.path.join(
+        integrated_test.checkpoint_bin_dir, "SegFault")
+    cmd = ["run", "-w", working_dir, binary_path]
+    ret = integrated_test.run_cragon_cli(cmd)
+    assert ret.returncode != 0
+
+    _, err = capfd.readouterr()
+    assert err == "Process recevied signal: Segmentation fault\n"
