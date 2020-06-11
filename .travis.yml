@@ -35,6 +35,17 @@ jobs:
       env:
         - MATRIX_EVAL="CC=gcc-7 && CXX=g++-7"
 
+    - python: 3.8
+      dist: bionic
+         - MATRIX_EVAL="CC=gcc && CXX=g++"
+      addons:
+        apt:
+          sources:
+            - ubuntu-toolchain-r-test
+          packages:
+            - g++-8
+      env:
+        - MATRIX_EVAL="CC=gcc-8 && CXX=g++-8"
 
 before_install:
     - eval "${MATRIX_EVAL}" && export CC=$CC CXX=$CXX

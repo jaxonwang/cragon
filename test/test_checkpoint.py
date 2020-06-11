@@ -41,7 +41,7 @@ def test_checkpoint_pi_estimation(tmpdir, capfd, build_test,
         integrated_test.checkpoint_bin_dir, "PiEst")
 
     cmd = ["run", "-i", str(interval), "-w", working_dir, binary_path,
-           "500000"]
+           "800000"]
     ret = integrated_test.run_cragon_cli(cmd)
     assert ret.returncode == 0
     integrated_test.assert_nothing_intercepted(working_dir)
