@@ -29,6 +29,11 @@ class DMTCPCmdOption(object):
             raise RuntimeError("DMTCP plugin is missing!")
         self.options["--with-plugin"] = context.dmtcp_plugins
 
+    def disable_internal_alloc(self):
+        # disable dmtcp internal alloc wrap
+        # https://github.com/dmtcp/dmtcp/issues/847
+        self.options["--disable-alloc-plugin"] = ""
+
     def gen_options(self):
         opts = []
         for key, value in self.options.items():
@@ -41,6 +46,7 @@ class DMTCPCmdOption(object):
 class DMTCPfirstrun(DMTCPCmdOption):
     def gen_options(self):
         self.set_new_coordinator()
+        self.disable_internal_alloc()
         self.set_plugin()
         return super().gen_options()
 

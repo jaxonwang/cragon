@@ -114,16 +114,20 @@ void log(int level, const char *s) {
 
 #define CREATE_WRAPPER(func_name, ret_type, args, arg_names...)                \
   _EXTC ret_type func_name args {                                              \
-    if (trapped.test_and_set()) {                                              \
-      return NEXT_FNC(func_name)(arg_names);                                   \
-    }                                                                          \
+    DMTCP_PLUGIN_DISABLE_CKPT();                                               \
     ret_type ret;                                                              \
+    if (trapped.test_and_set()) {                                              \
+      ret = NEXT_FNC(func_name)(arg_names);                                    \
+      DMTCP_PLUGIN_ENABLE_CKPT();                                              \
+      return ret;                                                              \
+    }                                                                          \
     ret = NEXT_FNC(func_name)(arg_names);                                      \
     int stored_errno = errno;                                                  \
     DEBUG_INFO(#func_name, stored_errno, ret, arg_names);                      \
     after_##func_name(stored_errno, ret, arg_names);                           \
     errno = stored_errno;                                                      \
     trapped.clear();                                                           \
+    DMTCP_PLUGIN_ENABLE_CKPT();                                                \
     return ret;                                                                \
   }
 
@@ -191,6 +195,7 @@ void after_mremap(int errnum, void *ret, void *old_address, size_t old_size,
 // don't use wrapper for variadic
 _EXTC void *mremap(void *old_address, size_t old_size, size_t new_size,
                    int flags, ...) {
+  DMTCP_PLUGIN_DISABLE_CKPT();
   va_list al;
   va_start(al, flags);
   void *ret;
@@ -215,6 +220,7 @@ _EXTC void *mremap(void *old_address, size_t old_size, size_t new_size,
     trapped.clear();
   }
   va_end(al);
+  DMTCP_PLUGIN_ENABLE_CKPT();
   return ret;
 }
 
