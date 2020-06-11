@@ -3,7 +3,8 @@ import os
 from . import integrated_test
 
 
-def test_checkpoint_pi_estimation_py_no_checkpoint(tmpdir, capfd):
+def test_checkpoint_pi_estimation_py_no_checkpoint(tmpdir, capfd,
+                                                   print_log_if_fail):
     binary_path = os.path.join(
         integrated_test.test_cases_dir,
         "checkpoint",
@@ -18,7 +19,8 @@ def test_checkpoint_pi_estimation_py_no_checkpoint(tmpdir, capfd):
     assert pi < 3.2 and pi > 3.1
 
 
-def test_checkpoint_pi_estimation_no_checkpoint(tmpdir, capfd, build_test):
+def test_checkpoint_pi_estimation_no_checkpoint(tmpdir, capfd, build_test,
+                                                print_log_if_fail):
     binary_path = os.path.join(
         integrated_test.checkpoint_bin_dir, "PiEst")
 
@@ -31,7 +33,8 @@ def test_checkpoint_pi_estimation_no_checkpoint(tmpdir, capfd, build_test):
     assert pi < 3.2 and pi > 3.1
 
 
-def test_checkpoint_pi_estimation(tmpdir, capfd, build_test):
+def test_checkpoint_pi_estimation(tmpdir, capfd, build_test,
+                                  print_log_if_fail):
     interval = 0.02
     working_dir = str(tmpdir)
     binary_path = os.path.join(
@@ -55,7 +58,7 @@ def test_checkpoint_pi_estimation(tmpdir, capfd, build_test):
     assert pi1 == pi2
 
 
-def test_seg_fault(tmpdir, capfd, build_test):
+def test_seg_fault(tmpdir, capfd, build_test, print_log_if_fail):
     working_dir = str(tmpdir)
     binary_path = os.path.join(
         integrated_test.checkpoint_bin_dir, "SegFault")
