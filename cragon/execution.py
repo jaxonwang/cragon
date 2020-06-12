@@ -190,6 +190,8 @@ class FirstRun(Execution):
         self.dmtcp_coordinator_host = "127.0.0.1"
         # will be init after execution
         self.intercept_monitor = None
+        # monitor the system usage
+        self.metrics_monitor = None
         # record isrestart
         self.isrestart = restart
         # the command of process to run
@@ -214,6 +216,11 @@ class FirstRun(Execution):
         self.intercept_monitor = monitor.InterceptedCallMonitor(
             self.fifo_path, context.working_dir)
         self.intercept_monitor.start()
+
+    def start_metrics_monitor(self):
+        # todo allow setting intervals from cli
+        self.metrics_monitor = monitor.MetricMonitor(1, context.working_dir)
+        self.metrics_monitor.start()
 
     def wait_for_port_file_available(self):
         wait_interval = 0.001
@@ -242,7 +249,7 @@ class FirstRun(Execution):
             int(port)
         except Exception as e:
             utils.FATAL(("Reading dmtcp port number error,"
-                        " dmtcp does not start normally"), e)
+                         " dmtcp does not start normally"), e)
         self.dmtcp_port = port
         logger.debug("Suceesfully retrieved port: %s", self.dmtcp_port)
 
@@ -252,6 +259,10 @@ class FirstRun(Execution):
     def __exit__(self, type, value, traceback):
         # should never raise here, clean carefully
         states.setTearDwon()
+
+        if self.metrics_monitor:
+            self.metrics_monitor.stop()
+            del self.metrics_monitor
 
         if self.intercept_monitor:
             self.intercept_monitor.stop()
@@ -275,7 +286,7 @@ class FirstRun(Execution):
     def wait_process(self):
 
         siginfo = os.waitid(os.P_PID, self.process_dmtcp_wrapped.pid,
-                            os.WEXITED|os.WNOWAIT)
+                            os.WEXITED | os.WNOWAIT)
         self.process_dmtcp_wrapped.wait()
 
         states.setProcessFinished()
@@ -298,6 +309,8 @@ class FirstRun(Execution):
         self.wait_for_port_file_available()
         self.init_ckpt_command(self.dmtcp_coordinator_host, self.dmtcp_port)
 
+        # two monitor
+        self.start_metrics_monitor()
         self.start_intercept_monitor()
 
         self.ckpt_algorithm.start()
@@ -305,6 +318,7 @@ class FirstRun(Execution):
         # finish
         self.wait_process()
 
+        # TODO: should we put stop in __exit__?
         self.ckpt_algorithm.stop()
 
     def gen_ckpt_info(self, ckpt_timestamp=None):

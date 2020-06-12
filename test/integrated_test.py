@@ -48,3 +48,7 @@ def assert_nothing_intercepted(working_dir):
 def restart_latest(working_dir):
     cmd = ["restart", "-w", working_dir]
     return run_cragon_cli(cmd)
+
+
+def get_metrics_log_path(record_dir):
+    return os.path.join(record_dir, context.metrics_file_name)

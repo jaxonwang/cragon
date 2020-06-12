@@ -87,7 +87,7 @@ setup(
     url="https://github.com/jaxonwang/cragon",
     author="JX Wang",
     author_email="jxwang92@gmail.com",
-    install_requires=["Click"],
+    install_requires=["Click", "psutil"],
     packages=['cragon'],
     ext_modules=[DMTCPandPlugin("all")],
     cmdclass={
