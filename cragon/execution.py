@@ -256,7 +256,7 @@ class FirstRun(Execution):
     def __enter__(self):
         return self
 
-    def __exit__(self, type, value, traceback):
+    def __exit__(self, exc_type, value, traceback):
         # should never raise here, clean carefully
         states.setTearDwon()
 
@@ -273,7 +273,10 @@ class FirstRun(Execution):
         logger.debug("Deleting temp port file: %s" % self.dmtcp_port_file_path)
         utils.safe_clean_file(self.dmtcp_port_file_path)
 
-        return True
+        if not value:
+            return True
+        else:
+            return False
 
     def start_process(self):
         logger.info("Start executing: %s" % " ".join(self.command_to_run))
@@ -309,7 +312,7 @@ class FirstRun(Execution):
         self.wait_for_port_file_available()
         self.init_ckpt_command(self.dmtcp_coordinator_host, self.dmtcp_port)
 
-        # two monitor
+        # two monitors
         self.start_metrics_monitor()
         self.start_intercept_monitor()
 
