@@ -50,5 +50,9 @@ def restart_latest(working_dir):
     return run_cragon_cli(cmd)
 
 
-def get_metrics_log_path(record_dir):
-    return os.path.join(record_dir, context.metrics_file_name)
+def get_system_metrics_log_path(record_dir):
+    return os.path.join(record_dir, context.system_metrics_file_name)
+
+
+def get_process_metrics_log_path(record_dir):
+    return os.path.join(record_dir, context.process_metrics_file_name)

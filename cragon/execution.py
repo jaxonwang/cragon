@@ -306,14 +306,14 @@ class FirstRun(Execution):
             self.returncode)
 
     def run(self):
+        # collect metrics before running
+        self.start_metrics_monitor()
         # start
         self.start_process()
 
         self.wait_for_port_file_available()
         self.init_ckpt_command(self.dmtcp_coordinator_host, self.dmtcp_port)
 
-        # two monitors
-        self.start_metrics_monitor()
         self.start_intercept_monitor()
 
         self.ckpt_algorithm.start()

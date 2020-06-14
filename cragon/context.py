@@ -31,7 +31,8 @@ ckpt_dir = None
 log_file_name = "cragon.log"
 intercepted_log_name = "intercepted.log"
 ckpt_info_file_name = "checkpoint_info"
-metrics_file_name = "system_metrics.csv"
+system_metrics_file_name = "system_metrics.csv"
+process_metrics_file_name = "process_metrics.json"
 
 current_host_name = None
 current_user_name = None

@@ -8,6 +8,7 @@ logger.setLevel(logging.DEBUG)
 
 
 access_lock = threading.Lock()
+callback_list_lock = threading.Lock()
 
 
 class State(enum.Enum):
@@ -32,7 +33,8 @@ __callbacks = [log_callback]
 
 def add_callback(func):
     # not thread safe
-    __callbacks.append(func)
+    with callback_list_lock:
+        __callbacks.append(func)
 
 
 class Globalstate(object):
@@ -46,7 +48,10 @@ def __transform(from_s, to_s):
         to_cpy = copy.copy(to_s)
         assert __current in from_s
         __current = to_s
-    for f in __callbacks:
+    with callback_list_lock:
+        # copy allow callback functions call add_callback
+        tmp_calbacks = __callbacks[:]
+    for f in tmp_calbacks:
         f(from_cpy, to_cpy)
 
 
