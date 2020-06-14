@@ -48,7 +48,7 @@ def valid_process_metrics(file_path):
     with open(file_path, "r") as f:
         for line in f:
             metrics = json.loads(line)
-            keys = set([k.split("_") for k in metrics.keys()])
+            keys = set([k.split("_")[-1] for k in metrics.keys()])
             for m in all_metrics:
                 assert m in keys
 
@@ -69,7 +69,7 @@ def test_metrics(tmpdir, capfd, print_log_if_fail):
         "checkpoint",
         "pi_est.py")
 
-    cmd = ["run", "-w", str(tmpdir), "python", binary_path, "100000"]
+    cmd = ["run", "-w", str(tmpdir), "python", binary_path, "1000000"]
     ret = integrated_test.run_cragon_cli(cmd)
     assert ret.returncode == 0
 
