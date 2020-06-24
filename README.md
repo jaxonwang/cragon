@@ -81,6 +81,10 @@ If you want to place the images in a different directory:
 ```
 cragon run -w ./different_dirname/ ./a.out
 ```
+## How it works
+Cragon intercepts the libc memory related functions (malloc, mmap, brk) and will know immediatly when the heap memory allocation fails. This will only happen on the systems where memory overcommit is disabled. Luckly, most HPC environments satisfy that. For memory over-commit allowed system, ```ulimit``` might be used to trigger the allocation failure if possible.
+## Limitations
+Cragon can only mangage programs which are dynamicly linked to libc since DMTCP uses LD_PRELOAD environment variable to acheive the checkpoint/restore.
 ## Contributing
 Cragon is still in its early developing state. There are many features to be implemented. Also please don't hesitate to contact me if you want some new features to be added into Cragon. Cragon won't be complete without feedbacks in real scenarios. If you find some bugs, please new an issue. Any contributions are welcomed and appreciated.
 
