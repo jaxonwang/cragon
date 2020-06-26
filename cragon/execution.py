@@ -86,7 +86,8 @@ def start_all(is_restart):
 
 def system_set_up():
     # config root logger
-    log_file_path = os.path.join(context.working_dir, context.log_file_name)
+    log_file_path = \
+        context.DirStructure.working_dir_to_log_file(context.working_dir)
     handler = logging.FileHandler(log_file_path)
     handler.setLevel(logging.DEBUG)
     formatter = logging.Formatter(
@@ -133,16 +134,16 @@ class FirstRun(Execution):
         if self.isrestart:
             self.fifo_path = context.fifo_path
         else:
-            self.fifo_path = os.path.abspath(os.path.join(
-                context.tmp_dir, "cragon-logging.fifo"))
+            self.fifo_path = context.DirStructure.tmp_dir_to_fifo_path(
+                context.tmp_dir)
         os.mkfifo(self.fifo_path, 0o600)
         os.environ["DMTCP_PLUGIN_EXEINFO_LOGGING_PIPE"] = self.fifo_path
 
     def init_dmtcp_coordinator(self):
         # using random port num for dmtcp coordinator
         self.dmtcp_port_file_name = "dmtcp_port_file.tmp"
-        self.dmtcp_port_file_path = os.path.join(
-            context.tmp_dir, self.dmtcp_port_file_name)
+        self.dmtcp_port_file_path = context.DirStructure.tmp_dir_to_port_file(
+                context.tmp_dir)
 
     def init_ckpt_command(self, host, port):
         self.ckpt_command = [context.dmtcp_command]
@@ -214,12 +215,14 @@ class FirstRun(Execution):
 
     def start_intercept_monitor(self):
         self.intercept_monitor = monitor.InterceptedCallMonitor(
-            self.fifo_path, context.working_dir)
+            self.fifo_path, context.DirStructure.get_monitor_record_dir())
         self.intercept_monitor.start()
 
     def start_metrics_monitor(self):
         # todo allow setting intervals from cli
-        self.metrics_monitor = monitor.MetricMonitor(1, context.working_dir)
+        self.metrics_monitor = monitor.MetricMonitor(
+            context.default_metrics_interval,
+            context.DirStructure.get_monitor_record_dir())
         self.metrics_monitor.start()
 
     def wait_for_port_file_available(self):

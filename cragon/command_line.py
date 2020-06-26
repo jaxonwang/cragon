@@ -6,18 +6,12 @@ import sys
 from cragon import utils
 from cragon import context
 from cragon import execution
-from cragon import checkpoint_manager
 
 
 def bad_args_exit(err_msg):
     click.echo(err_msg, err=True)
     sys.exit(2)
 
-
-dmtcp_file_check = [
-    context.dmtcp_launch_file_name,
-    context.dmtcp_command_file_name,
-    context.dmtcp_restart_file_name]
 
 example_str = \
     """
@@ -53,14 +47,17 @@ def common_options(f):
         f.__click_params__ += param_list
     return f
 
+
 def check_dmtcp_path(dmtcp_path):
     dmtcp_path = dmtcp_path
     if not dmtcp_path:
-        dmtcp_path = os.path.join(context.ROOT_DIR, "bin")
+        dmtcp_path = context.DirStructure.dmtcp_path()
     dmtcp_path = os.path.abspath(dmtcp_path)
 
-    files_to_check = [os.path.join(dmtcp_path, f)
-                      for f in dmtcp_file_check]
+    dmtcp_launch = context.DirStructure.dmtcp_path_to_dmtcp_launch(dmtcp_path)
+    dmtcp_command = context.DirStructure.dmtcp_path_to_dmtcp_launch(dmtcp_path)
+    dmtcp_restart = context.DirStructure.dmtcp_path_to_dmtcp_launch(dmtcp_path)
+    files_to_check = [dmtcp_launch, dmtcp_command, dmtcp_restart]
     for f in files_to_check:
         if not os.path.isfile(f):
             if not dmtcp_path:
@@ -69,6 +66,7 @@ def check_dmtcp_path(dmtcp_path):
             else:
                 bad_args_exit("File: {} not found.".format(f))
     context.dmtcp_path = dmtcp_path
+
 
 @cli.command()
 @click.option('-w', '--working-directory', type=click.Path(exists=True),
@@ -101,6 +99,7 @@ def run(**args):
 
     execution.start_all(is_restart=False)
 
+
 @cli.command()
 @click.option('-w', '--working-directory', type=click.Path(exists=True),
               help=("Cragon working directory where"
@@ -120,12 +119,12 @@ def restart(**args):
     # check working directory
     if not image_dir and not wdir:
         bad_args_exit(("Please working directory or checkpoint directory "
-                 "from which Cragon start."))
+                       "from which Cragon start."))
     elif not wdir:
         # check image to restart, and fetch the commands to create wdir
         if not context.check_image_directory_legal(image_dir):
             bad_args_exit("%s doesn't seem to be a Cragon image directory." %
-                        wdir)
+                          wdir)
 
         # check whether image is in cragon working directory
         p = str(pathlib.Path(image_dir).parent.parent.absolute())
@@ -141,14 +140,15 @@ def restart(**args):
         # find latest
         if not context.check_working_directory_legal(wdir):
             bad_args_exit("%s doesn't seem to be a Cragon working directoy." %
-                        wdir)
-        context.working_dir=wdir
+                          wdir)
+        context.working_dir = wdir
 
     # check ckpt algorihtms
     if args["intervals"]:
         context.ckpt_intervals = float(args["intervals"])
 
     execution.start_all(is_restart=True)
+
 
 if __name__ == '__main__':
     cli()

@@ -19,8 +19,8 @@ class InterceptedCallMonitor(utils.StoppableService):
     def __init__(self, fifo_path, record_dir):
         super().__init__()
         self.fifo_path = fifo_path
-        self.record_file = os.path.join(
-            record_dir, context.intercepted_log_name)
+        self.record_file = context.DirStructure.record_dir_to_intercept_log(
+            record_dir)
 
     def start(self):
         logger.info("Starting interception monitor.")
@@ -54,10 +54,10 @@ class MetricMonitor(utils.StoppableService):
     def __init__(self, interval, record_dir):
         super().__init__()
         self.interval = interval
-        self.system_metrics_file = os.path.join(
-            record_dir, context.system_metrics_file_name)
-        self.process_metrics_file = os.path.join(
-            record_dir, context.process_metrics_file_name)
+        self.system_metrics_file = \
+            context.DirStructure.record_dir_to_system_metrics_file(record_dir)
+        self.process_metrics_file = \
+            context.DirStructure.record_dir_to_process_metrics_file(record_dir)
         self.sys_metrics_fobj = None
         self.prcs_metrics_fobj = None
 

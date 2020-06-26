@@ -116,7 +116,8 @@ class CkptManager(object):
         archive_dir_name = gen_image_dir_name(self.next_ckpt_id(),
                                               context.current_user_name,
                                               context.current_host_name)
-        archive_dir_path = os.path.join(context.ckpt_dir, archive_dir_name)
+        archive_dir_path = context.DirStructure.ckpt_dir_to_image_dir(
+            context.ckpt_dir, archive_dir_name)
         utils.create_dir_unless_exist(archive_dir_path)
 
         image_files = get_unarchived_images()
@@ -126,8 +127,8 @@ class CkptManager(object):
         logger.info("Archiving current checkpoint images to %s" %
                     archive_dir_path)
         # record exe and ckpt info
-        ckpt_info_file = os.path.join(archive_dir_path,
-                                      context.ckpt_info_file_name)
+        ckpt_info_file = \
+            context.DirStructure.image_dir_to_ckpt_info_file(archive_dir_path)
         with open(ckpt_info_file, "w") as f:
             json.dump(ckpt_info, f, indent=2, sort_keys=True,
                       ensure_ascii=True)
