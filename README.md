@@ -40,10 +40,6 @@ tox
 ```
 
 ## Usage
-To see the help information of cragon:
-```
-cragon --help
-```
 To allow Cragon automatically checkpoint the process, start your progam with:
 ```
 cragon run ./a.out
@@ -73,13 +69,17 @@ To restart from the latest checkpoint:
 ```
 cragon restart -w ./cragon_a.out_2020-06-24_18:52:15,344120
 ```
-To restart from a specified image (TODO: I haven't write this cli):
+To restart from a specified:
 ```
 cragon restart ./cragon_a.out_2020-06-24_18:52:15,344120/checkpoint_images/2_username@hostname/
 ```
 If you want to place the images in a different directory:
 ```
 cragon run -w ./different_dirname/ ./a.out
+```
+For other usages, please check the help information of Cragon:
+```
+cragon --help
 ```
 ## How it works
 Cragon intercepts the libc memory related functions (malloc, mmap, brk) and will know immediatly when the heap memory allocation fails. This will only happen on the systems where memory overcommit is disabled. Luckly, most HPC environments satisfy that. For memory over-commit allowed system, ```ulimit``` might be used to trigger the allocation failure if possible.

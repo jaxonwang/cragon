@@ -71,7 +71,7 @@ def start_all(is_restart):
         context.restart_check()
 
     # start all
-    system_set_up()
+    system_set_up(is_restart)
     retcode = 1
     try:
         with FirstRun(restart=is_restart) as r:
@@ -84,7 +84,7 @@ def start_all(is_restart):
     exit(retcode)
 
 
-def system_set_up():
+def system_set_up(is_restart):
     # config root logger
     log_file_path = \
         context.DirStructure.working_dir_to_log_file(context.working_dir)
@@ -118,7 +118,14 @@ def system_set_up():
                 context.tmp_file_created.append(start)
 
     # init image maneger
-    checkpoint_manager.CkptManager(checkpoint_manager.KeepLatestN)
+    # for restart image_dir_to_restart will be non-emtpy
+    # for firstrun, it will be emtpy and ignored
+    # this implicity is a bad design
+    if is_restart:
+        checkpoint_manager.CkptManager(checkpoint_manager.KeepLatestN,
+                                    context.image_dir_to_restart)
+    else:
+        checkpoint_manager.CkptManager(checkpoint_manager.KeepLatestN)
 
 
 def system_tear_down():

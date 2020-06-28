@@ -23,21 +23,31 @@ def get_unarchived_images():
     return files
 
 
-def gen_image_dir_name(ckpt_id, username, hostname):
-    return "%s_%s@%s" % (
-        ckpt_id, username, hostname)
+def gen_image_dir_name(username, hostname, global_id, parent_id):
+    return "%s@%s:%d_%d" % (username, hostname, global_id, parent_id)
 
+
+"""
+dir pattern : user@host:id_parent
+"""
+dir_name_pattern = re.compile("^(.+)@(.+):([0-9]+)_([0-9]+)$")
+
+class Image(object):
+
+    def __init__(self, user, host, global_id, parent_id):
+        self.user = user
+        self.host = host
+        self.global_id = int(global_id)
+        self.parent_id = int(parent_id)
 
 def extract_image_dir_name(image_dir_name):
     image_dir_name = pathlib.Path(image_dir_name).name
-    p = re.compile("^([0-9]+)_(.+)@(.+)$")
-    matched = p.match(image_dir_name)
+    matched = dir_name_pattern.match(image_dir_name)
     if not matched:
         return None
     else:
-        return (int(matched.group(1)),
-                matched.group(2),
-                matched.group(3))
+        return Image(user=matched[1], host=matched[2],
+                     global_id=matched[3], parent_id= matched[4])
 
 
 def images_in_dir():
@@ -47,10 +57,10 @@ def images_in_dir():
             context.ckpt_dir).iterdir() if x.is_dir()]
     image_dirs = []
     for sub_dir in sub_dirs:
-        extracted = extract_image_dir_name(sub_dir.name)
-        if not extracted:
+        extracted_image = extract_image_dir_name(sub_dir.name)
+        if not extracted_image:
             continue
-        img_id = extracted[0]
+        img_id = extracted_image.global_id
         image_dirs.append((sub_dir.name, img_id))
     image_dirs.sort(key=lambda x: x[1])
     return [i[0] for i in image_dirs]
@@ -87,35 +97,46 @@ class KeepAll(ImageUpdatePolicy):
 @utils.init_once_singleton
 class CkptManager(object):
 
-    def __init__(self, ckpt_policy):
+    def __init__(self, ckpt_policy, image_dir_to_restart=None):
         self.ckpt_policy = ckpt_policy
         self.image_list = None
         logger.info("Set the checkpoint image management policy: %s",
                     ckpt_policy.__name__)
 
+        self.restart_from = image_dir_to_restart
         self.init_records()
 
     def init_records(self):
         self.image_list = images_in_dir()
         if self.image_list:
-            current_ckpt_id = extract_image_dir_name(self.image_list[-1])[0]
-            self.current_ckpt_id = int(current_ckpt_id)
+            latest_image = extract_image_dir_name(self.image_list[-1])
+
+            self.next_image_global_id = latest_image.global_id + 1
+            image_restart_from = extract_image_dir_name(self.restart_from)
+            # parent point to the last checkpoint image recovered from
+            self.next_image_parent_id = image_restart_from.global_id
             logging.debug("Images found: %s" % str(self.image_list))
         else:
             # if dir is empty then start from 0
-            self.current_ckpt_id = 0
-        logging.info("Set the current checkpoint id to :%d",
-                     self.current_ckpt_id)
+            self.next_image_global_id = 1
+            self.next_image_parent_id = 0;
+        logging.info("Set the current checkpoint id to :%d, and its parent %d",
+                     self.next_image_global_id, self.next_image_parent_id)
 
     def next_ckpt_id(self):
-        self.current_ckpt_id += 1
-        return self.current_ckpt_id
+        ret_global_id = self.next_image_global_id
+        ret_parent_id = self.next_image_parent_id
+
+        self.next_image_global_id += 1
+        self.next_image_parent_id = ret_global_id
+        return ret_global_id, ret_parent_id
 
     def make_checkpoint(self, ckpt_info):
         # record and archive the checkpoint of
-        archive_dir_name = gen_image_dir_name(self.next_ckpt_id(),
-                                              context.current_user_name,
-                                              context.current_host_name)
+        g_id, p_id = self.next_ckpt_id()
+        archive_dir_name = gen_image_dir_name(context.current_user_name,
+                                              context.current_host_name,
+                                              g_id, p_id)
         archive_dir_path = context.DirStructure.ckpt_dir_to_image_dir(
             context.ckpt_dir, archive_dir_name)
         utils.create_dir_unless_exist(archive_dir_path)

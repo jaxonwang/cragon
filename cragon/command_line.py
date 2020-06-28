@@ -120,24 +120,27 @@ def restart(**args):
     if not image_dir and not wdir:
         bad_args_exit(("Please working directory or checkpoint directory "
                        "from which Cragon start."))
-    elif not wdir:
+    elif image_dir:  # only image dir provided
         # check image to restart, and fetch the commands to create wdir
         if not context.check_image_directory_legal(image_dir):
             bad_args_exit("%s doesn't seem to be a Cragon image directory." %
-                          wdir)
-
-        # check whether image is in cragon working directory
-        p = str(pathlib.Path(image_dir).parent.parent.absolute())
-        if not context.check_working_directory_legal(p):
-            context.load_last_ckpt_info(image_dir)
-            cmd_basename = utils.get_command_basename(
-                context.last_ckpt_info["command"])
-            context.create_working_directory_in_cwd(cmd_basename)
-        else:
-            context.working_dir = p
+                          image_dir)
         context.image_dir_to_restart = image_dir
-    else:
-        # find latest
+
+        if not wdir:
+            # check whether image is in cragon working directory
+            p = str(pathlib.Path(image_dir).parent.parent.absolute())
+            # create a new wdir if it is not
+            if not context.check_working_directory_legal(p):
+                context.load_last_ckpt_info(image_dir)
+                cmd_basename = utils.get_command_basename(
+                    context.last_ckpt_info["command"])
+                context.create_working_directory_in_cwd(cmd_basename)
+            else:
+                context.working_dir = p
+        else:  # both privided
+            context.working_dir = wdir
+    else:  # only wdir privided, start_all will find the latest image
         if not context.check_working_directory_legal(wdir):
             bad_args_exit("%s doesn't seem to be a Cragon working directoy." %
                           wdir)

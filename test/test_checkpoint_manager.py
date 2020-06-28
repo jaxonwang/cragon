@@ -8,6 +8,7 @@ from cragon import context
 
 from . import general
 
+
 @pytest.fixture(scope="function")
 def set_context(tmpdir):
     stored_imagedir = context.ckpt_dir
@@ -17,16 +18,18 @@ def set_context(tmpdir):
 
     context.ckpt_dir = stored_imagedir
 
+
 @pytest.fixture(scope="function")
 def mktestdirs(tmpdir, set_context):
     cwd = Path(tmpdir)
     cwd.joinpath("12_abc@cdef").touch()
     cwd.joinpath("whatever").touch()
     legealdirs = [
-        "3_abc@cdef",
-        "2_abc@cdef",
-        "1_abc@cdef",
-        "5_abc@cdef",
+        "abc@cdef:1_0",
+        "abc@cdef:2_1",
+        "abc@cdef:3_2",
+        "abc@cdef:4_3",
+        "abc@cdef:5_1",
     ]
     bad_dirs = [
         "abc",
@@ -34,11 +37,11 @@ def mktestdirs(tmpdir, set_context):
         "1_asdffdsa",
         "asdfas@fdasf",
         "1asdbsa@gdasf",
-        "dfasflj_fdsaf@jl",
-        "-1_fdsaf@jl",
-        "_fdsaf@jl",
-        "_fdsaf@",
-        "_@",
+        "fdsaf@jl123",
+        "-1_fdsaf@jl:_3",
+        "_fdsaf@jl:3_",
+        "_fdsaf@:",
+        "@:_",
     ]
     for d in legealdirs:
         cwd.joinpath(d).mkdir()
@@ -46,7 +49,7 @@ def mktestdirs(tmpdir, set_context):
     for d in bad_dirs:
         cwd.joinpath(d).mkdir()
 
-    latest_img = cwd.joinpath("5_abc@cdef")
+    latest_img = cwd.joinpath("abc@cdef:5_1")
     for i in range(4):
         latest_img.joinpath("%d.dmtcp" % i).touch()
 
@@ -55,16 +58,17 @@ def test_images_in_dir(mktestdirs):
 
     images = checkpoint_manager.images_in_dir()
     expected = [
-        "1_abc@cdef",
-        "2_abc@cdef",
-        "3_abc@cdef",
-        "5_abc@cdef",
+        "abc@cdef:1_0",
+        "abc@cdef:2_1",
+        "abc@cdef:3_2",
+        "abc@cdef:4_3",
+        "abc@cdef:5_1",
     ]
     assert images == expected
 
 
 def test_latest_image_dir(tmpdir, mktestdirs):
-    expected = os.path.join(tmpdir, "5_abc@cdef")
+    expected = os.path.join(tmpdir, "abc@cdef:5_1")
     assert checkpoint_manager.latest_image_dir() == expected
 
 
@@ -74,7 +78,7 @@ def test_images_in_latest(tmpdir, mktestdirs):
     exp_imgs = [
         os.path.join(
             tmpdir,
-            "5_abc@cdef",
+            "abc@cdef:5_1",
             "%d.dmtcp" %
             i) for i in range(4)]
     assert exp_imgs == imgs
@@ -82,11 +86,21 @@ def test_images_in_latest(tmpdir, mktestdirs):
 
 def test_Ckpt_manager_current_cktp_id_when_imgaes_exist(mktestdirs):
     general.destory_singleton(checkpoint_manager.CkptManager)
-    m = checkpoint_manager.CkptManager(checkpoint_manager.KeepAll)
-    assert m.next_ckpt_id() == 6
+    m = checkpoint_manager.CkptManager(checkpoint_manager.KeepAll,
+                                       "abc@cdef:5_1")
+    assert m.next_ckpt_id() == (6, 5)
+    assert m.next_ckpt_id() == (7, 6)
+
+    general.destory_singleton(checkpoint_manager.CkptManager)
+    m = checkpoint_manager.CkptManager(checkpoint_manager.KeepAll,
+                                       "abc@cdef:4_3")
+    assert m.next_ckpt_id() == (6, 4)
+    assert m.next_ckpt_id() == (7, 6)
 
 
 def test_Ckpt_manager_current_cktp_id_when_no_imgaes_exist(set_context):
     general.destory_singleton(checkpoint_manager.CkptManager)
     m = checkpoint_manager.CkptManager(checkpoint_manager.KeepAll)
-    assert m.next_ckpt_id() == 1
+    assert m.next_ckpt_id() == (1, 0)
+    assert m.next_ckpt_id() == (2, 1)
+    assert m.next_ckpt_id() == (3, 2)
