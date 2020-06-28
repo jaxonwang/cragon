@@ -129,9 +129,16 @@ class MetricMonitor(utils.StoppableService):
             return dict_add_prefix("mem", m_ms)
 
         def per_process_metrics(p):
-            with p.oneshot():
-                cpu = p.cpu_times()
-                mem = p.memory_full_info()
+            # could be still low posibility process stop after is_running test,
+            # then raise exception
+            if not p.is_running():
+                return {}
+            try:
+                with p.oneshot():
+                    cpu = p.cpu_times()
+                    mem = p.memory_full_info()
+            except Exception:
+                return {}
             ret = {}
             ret.update(cpu._asdict())
             ret.update(mem._asdict())
