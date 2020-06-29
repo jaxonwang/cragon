@@ -86,7 +86,7 @@ def check_working_directory_legal(wdir):
 
 
 def check_image_directory_legal(idir):
-    if not checkpoint_manager.image_files_in_dir(idir):
+    if not checkpoint_manager.image_files_in_image_dir(idir):
         return False
     if not DirStructure.image_dir_to_ckpt_info_file(idir):
         return False
@@ -174,6 +174,7 @@ def ckpt_info_check(ckpt_image_dir):
 
 
 def restart_check():
+    # called after check(), using some vars it inits
     global images_to_restart, dmtcp_restart, image_dir_to_restart
 
     bad_working_dir_s = \
@@ -184,12 +185,12 @@ def restart_check():
     dmtcp_restart = DirStructure.dmtcp_path_to_dmtcp_restart(dmtcp_path)
 
     if not image_dir_to_restart:
-        image_dir_to_restart = checkpoint_manager.latest_image_dir()
+        image_dir_to_restart = checkpoint_manager.latest_image_dir(ckpt_dir)
     if not image_dir_to_restart:
         check_failed(bad_working_dir_s)
     ckpt_info_check(image_dir_to_restart)
     images_to_restart = checkpoint_manager.\
-        image_files_in_dir(image_dir_to_restart)
+        image_files_in_image_dir(image_dir_to_restart)
     if not images_to_restart:
         check_failed(bad_working_dir_s)
 

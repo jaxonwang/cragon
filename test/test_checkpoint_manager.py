@@ -11,16 +11,16 @@ from . import general
 
 @pytest.fixture(scope="function")
 def set_context(tmpdir):
-    stored_imagedir = context.ckpt_dir
+    stored_ckpt_dir = context.ckpt_dir
     context.ckpt_dir = tmpdir
 
     yield
 
-    context.ckpt_dir = stored_imagedir
+    context.ckpt_dir = stored_ckpt_dir
 
 
 @pytest.fixture(scope="function")
-def mktestdirs(tmpdir, set_context):
+def mktestdirs(tmpdir):
     cwd = Path(tmpdir)
     cwd.joinpath("12_abc@cdef").touch()
     cwd.joinpath("whatever").touch()
@@ -54,9 +54,9 @@ def mktestdirs(tmpdir, set_context):
         latest_img.joinpath("%d.dmtcp" % i).touch()
 
 
-def test_images_in_dir(mktestdirs):
+def test_images_in_dir(mktestdirs, tmpdir):
 
-    images = checkpoint_manager.images_in_dir()
+    images = checkpoint_manager.images_in_dir(tmpdir)
     expected = [
         "abc@cdef:1_0",
         "abc@cdef:2_1",
@@ -67,14 +67,14 @@ def test_images_in_dir(mktestdirs):
     assert images == expected
 
 
-def test_latest_image_dir(tmpdir, mktestdirs):
+def test_latest_image_dir(mktestdirs, tmpdir):
     expected = os.path.join(tmpdir, "abc@cdef:5_1")
-    assert checkpoint_manager.latest_image_dir() == expected
+    assert checkpoint_manager.latest_image_dir(tmpdir) == expected
 
 
-def test_images_in_latest(tmpdir, mktestdirs):
-    latest_dir = checkpoint_manager.latest_image_dir()
-    imgs = checkpoint_manager.image_files_in_dir(latest_dir)
+def test_images_in_latest(mktestdirs, tmpdir):
+    latest_dir = checkpoint_manager.latest_image_dir(tmpdir)
+    imgs = checkpoint_manager.image_files_in_image_dir(latest_dir)
     exp_imgs = [
         os.path.join(
             tmpdir,
@@ -84,7 +84,8 @@ def test_images_in_latest(tmpdir, mktestdirs):
     assert exp_imgs == imgs
 
 
-def test_Ckpt_manager_current_cktp_id_when_imgaes_exist(mktestdirs):
+def test_Ckpt_manager_current_cktp_id_when_imgaes_exist(mktestdirs,
+                                                        set_context):
     general.destory_singleton(checkpoint_manager.CkptManager)
     m = checkpoint_manager.CkptManager(checkpoint_manager.KeepAll,
                                        "abc@cdef:5_1")

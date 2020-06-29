@@ -32,6 +32,7 @@ dir pattern : user@host:id_parent
 """
 dir_name_pattern = re.compile("^(.+)@(.+):([0-9]+)_([0-9]+)$")
 
+
 class Image(object):
 
     def __init__(self, user, host, global_id, parent_id):
@@ -40,6 +41,7 @@ class Image(object):
         self.global_id = int(global_id)
         self.parent_id = int(parent_id)
 
+
 def extract_image_dir_name(image_dir_name):
     image_dir_name = pathlib.Path(image_dir_name).name
     matched = dir_name_pattern.match(image_dir_name)
@@ -47,14 +49,13 @@ def extract_image_dir_name(image_dir_name):
         return None
     else:
         return Image(user=matched[1], host=matched[2],
-                     global_id=matched[3], parent_id= matched[4])
+                     global_id=matched[3], parent_id=matched[4])
 
 
-def images_in_dir():
+def images_in_dir(ckpt_dir):
     # return the images in the directory, ordered from old to latest
     sub_dirs = [
-        x for x in pathlib.Path(
-            context.ckpt_dir).iterdir() if x.is_dir()]
+        x for x in pathlib.Path(ckpt_dir).iterdir() if x.is_dir()]
     image_dirs = []
     for sub_dir in sub_dirs:
         extracted_image = extract_image_dir_name(sub_dir.name)
@@ -66,15 +67,15 @@ def images_in_dir():
     return [i[0] for i in image_dirs]
 
 
-def latest_image_dir():
-    imgs = images_in_dir()
+def latest_image_dir(ckpt_dir):
+    imgs = images_in_dir(ckpt_dir)
     if not imgs:
         return None
     latest = imgs[-1]
-    return str(pathlib.Path(context.ckpt_dir).joinpath(latest).absolute())
+    return str(pathlib.Path(ckpt_dir).joinpath(latest).absolute())
 
 
-def image_files_in_dir(img_dir):
+def image_files_in_image_dir(img_dir):
     images = list(pathlib.Path(img_dir).glob("*.dmtcp"))
     # sort to make sure return the same file list for a dir
     return sorted([str(i.absolute()) for i in images])
@@ -107,7 +108,7 @@ class CkptManager(object):
         self.init_records()
 
     def init_records(self):
-        self.image_list = images_in_dir()
+        self.image_list = images_in_dir(context.ckpt_dir)
         if self.image_list:
             latest_image = extract_image_dir_name(self.image_list[-1])
 
@@ -119,7 +120,7 @@ class CkptManager(object):
         else:
             # if dir is empty then start from 0
             self.next_image_global_id = 1
-            self.next_image_parent_id = 0;
+            self.next_image_parent_id = 0
         logging.info("Set the current checkpoint id to :%d, and its parent %d",
                      self.next_image_global_id, self.next_image_parent_id)
 

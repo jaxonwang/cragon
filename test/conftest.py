@@ -17,6 +17,7 @@ def pytest_runtest_makereport(item, call):
 
     setattr(item, "rep_" + rep.when, rep)
 
+
 @pytest.fixture(scope="session")
 def build_test():
     print("Compiling test binaries")
@@ -31,9 +32,28 @@ def build_test():
 def print_log_if_fail(request, tmpdir):
     yield
     if request.node.rep_call.failed:
-        print("*****"*10 + " " + str(request.node.name) +" log " +"*****"*10)
+        print("*****"*10 + " " + str(request.node.name) + " log " + "*****"*10)
         log_path = integrated_test.get_cragon_log_path(tmpdir)
         if not os.path.isfile(log_path):
             return
         with open(log_path, "r") as f:
             print(f.read())
+
+
+@pytest.fixture(scope="session")
+def image_prepare(tmpdir_factory):
+    fn = tmpdir_factory.mktemp("checkpoint_test")
+    interval = 0.02
+    working_dir = str(fn)
+    binary_path = os.path.join(
+        integrated_test.checkpoint_bin_dir, "PiEst")
+
+    cmd = ["run", "-i", str(interval), "-w", working_dir, binary_path,
+           "800000"]
+    p = subprocess.run(["cragon"] + cmd, stdout=subprocess.PIPE,
+                       stderr=subprocess.PIPE)
+
+    assert p.returncode == 0
+    assert not p.stderr
+    integrated_test.assert_nothing_intercepted(working_dir)
+    return str(fn), p.stdout.decode("ascii")

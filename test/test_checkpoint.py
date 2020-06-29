@@ -1,5 +1,7 @@
 import os
 
+from cragon import checkpoint_manager
+
 from . import integrated_test
 
 
@@ -33,25 +35,32 @@ def test_checkpoint_pi_estimation_no_checkpoint(tmpdir, capfd, build_test,
     assert pi < 3.2 and pi > 3.1
 
 
-def test_checkpoint_pi_estimation(tmpdir, capfd, build_test,
-                                  print_log_if_fail):
-    interval = 0.02
-    working_dir = str(tmpdir)
-    binary_path = os.path.join(
-        integrated_test.checkpoint_bin_dir, "PiEst")
-
-    cmd = ["run", "-i", str(interval), "-w", working_dir, binary_path,
-           "800000"]
-    ret = integrated_test.run_cragon_cli(cmd)
-    assert ret.returncode == 0
-    integrated_test.assert_nothing_intercepted(working_dir)
-
-    pi1, err = capfd.readouterr()
+def test_checkpoint_pi_estimation(capfd, build_test,
+                                  print_log_if_fail, image_prepare):
 
     # check the output from restart is the same
+    working_dir, pi1 = image_prepare
     ret = integrated_test.restart_latest(working_dir)
     assert ret.returncode == 0
     integrated_test.assert_nothing_intercepted(working_dir)
+
+    pi2, err = capfd.readouterr()
+
+    assert pi1 == pi2
+
+
+def test_restart_from_specific_iamge(capfd, build_test, print_log_if_fail,
+                                     image_prepare):
+
+    wdir, pi1 = image_prepare
+    ckpt_dir = integrated_test.get_ckpt_dir(wdir)
+    images = checkpoint_manager.images_in_dir(ckpt_dir)
+    assert len(images) > 1
+
+    cmd = ["restart", os.path.join(ckpt_dir, images[0])]
+    ret = integrated_test.run_cragon_cli(cmd)
+    assert ret.returncode == 0
+    integrated_test.assert_nothing_intercepted(wdir)
 
     pi2, err = capfd.readouterr()
 

@@ -36,8 +36,8 @@ def get_cragon_log_path(working_dir):
     return os.path.join(str(working_dir), context.log_file_name)
 
 
-def get_ckpt_image_dir(working_dir):
-    return os.path.join(str(working_dir), context.log_file_name)
+def get_ckpt_dir(working_dir):
+    return os.path.join(str(working_dir), context.ckpt_dir_name)
 
 
 def assert_nothing_intercepted(working_dir):
