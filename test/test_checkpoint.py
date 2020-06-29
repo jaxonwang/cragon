@@ -55,7 +55,7 @@ def test_restart_from_specific_iamge(capfd, build_test, print_log_if_fail,
     wdir, pi1 = image_prepare
     ckpt_dir = integrated_test.get_ckpt_dir(wdir)
     images = checkpoint_manager.images_in_dir(ckpt_dir)
-    assert len(images) > 1
+    assert len(images) >= 1
 
     cmd = ["restart", os.path.join(ckpt_dir, images[0])]
     ret = integrated_test.run_cragon_cli(cmd)

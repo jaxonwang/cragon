@@ -1,4 +1,10 @@
+
+<p align="center">
+  <img src="https://user-images.githubusercontent.com/10634580/86003065-37858700-ba4c-11ea-8d3d-f268497a4e6e.png" />
+</p>
+
 # Cragon
+
 [![Build Status](https://travis-ci.com/jaxonwang/cragon.svg?branch=master)](https://travis-ci.com/jaxonwang/cragon)
 
 Cragon is a checkpoint/restart manager for Linux environment. It saves your time whenever you are waiting for a long running scientific computing application in HPC environments. 
