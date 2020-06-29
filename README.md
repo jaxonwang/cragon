@@ -19,7 +19,7 @@ Time to try checkpoint/restore for your program! [DMTCP](http://dmtcp.sourceforg
 - Workflow integration.
 
 ## Installation
-Cragon should be runn on Linux kernel >= 2.6.32. Python3 and C++11 compiler are required. It is highly recommended to install Cragon in Python virtualenv or [Conda](https://docs.conda.io/en/latest/).
+Cragon should be run on Linux kernel >= 2.6.32. Python3 and C++11 compiler are required. It is highly recommended to install Cragon in Python virtualenv or [Conda](https://docs.conda.io/en/latest/).
 
 To enable python virtualenv:
 ```
@@ -62,20 +62,19 @@ cragon_a.out_2020-06-24_18:52:15,344120/checkpoint_images/1_username@hostname/ch
 cragon_a.out_2020-06-24_18:52:15,344120/checkpoint_images/2_username@hostname
 cragon_a.out_2020-06-24_18:52:15,344120/checkpoint_images/2_username@hostname/ckpt_a.out_c417f7-40000-58163e7382ed.dmtcp
 cragon_a.out_2020-06-24_18:52:15,344120/checkpoint_images/2_username@hostname/checkpoint_info
-cragon_a.out_2020-06-24_18:52:15,344120/checkpoint_images/3_username@hostname
 ```
 The directory ```craong_program_date/checkpoint_images/``` stores the images checkpointed. 
 To restart from the latest checkpoint:
 ```
 cragon restart -w ./cragon_a.out_2020-06-24_18:52:15,344120
 ```
-To restart from a specified:
+To restart from a specified image:
 ```
 cragon restart ./cragon_a.out_2020-06-24_18:52:15,344120/checkpoint_images/2_username@hostname/
 ```
 If you want to place the images in a different directory:
 ```
-cragon run -w ./different_dirname/ ./a.out
+cragon run -w /dirpath/ ./a.out
 ```
 For other usages, please check the help information of Cragon:
 ```
