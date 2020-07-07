@@ -6,7 +6,7 @@ from random import random
 
 def pi(count):
     inside = 0
-    for i in range(count):
+    for _ in range(count):
         a = random()
         b = random()
         if a*a + b*b <= 1:

@@ -10,20 +10,20 @@
 
 Cragon is a checkpoint/restart manager for Linux environment. It saves your time whenever you are waiting for a long running scientific computing application in HPC environments. 
 When you need to submit/execute a long-running program, do you:
-  - Don't know how many resources (CPU, memory) the program will need.
-  - Having been waiting for days, weeks but the program exceeds the maximum time you allowed and killed?
-  - Having been waiting for days, weeks but the program crashed because it runs out the resources, especially, memory?
-  - You restart the program, double the resources but still worried about the failure?
+-  Don't know how many resources (CPU, memory) the program will need.
+-  Having been waiting for days, weeks but the program exceeds the maximum time you allowed and killed?
+-  Having been waiting for days, weeks but the program crashed because it runs out the resources, especially, memory?
+-  You restart the program, double the resources but still worried about the failure?
 
 Time to try checkpoint/restore for your program! [DMTCP](http://dmtcp.sourceforge.net/) is a robust, powerful, and widely used user-space distributed checkpoint/restore tool in Linux. Neither recompiling nor root-privilege needed, users just backup their processes easily. Cragon uses DMTCP to perform checkpoint/restore, also, providing features below:
 
-  - Easy to install and use
-  - Diagnose the causes of failure of scientific computing applications.
-  - Only the recoverable will be restart, ex. A process crashed by malloc error.
-  - Speed up checkpoint by leveraging computing machines' highspeed local storage(such as SSD, NVME).
-  - Automatically migrate and revive the failed processes to other machines.
-  - HPC job engines, such as Slurm, UGE.
-  - Workflow integration.
+-  Easy to install and use
+-  Diagnose the causes of failure of scientific computing applications.
+-  Only the recoverable will be restart, ex. A process crashed by malloc error.
+-  Speed up checkpoint by leveraging computing machines' highspeed local storage(such as SSD, NVME).
+-  Automatically migrate and revive the failed processes to other machines.
+-  HPC job engines, such as Slurm, UGE.
+-  Workflow integration.
 
 ## Installation
 Cragon should be run on Linux kernel >= 2.6.32. Python3 and C++11 compiler are required. It is highly recommended to install Cragon in Python virtualenv or [Conda](https://docs.conda.io/en/latest/).

@@ -21,9 +21,9 @@ def test_c_memory(tmpdir, capfd, build_test):
 
 
 def test_bad_memory_call(tmpdir, capfd, build_test):
-    "Check all the failed memory call should be intercepted"
-
     """
+    Check all the failed memory call should be intercepted
+
     dmtcp_launch --with-plugin libcragon_exeinfo.so bin/BadMemoryCall
     Set RLIMIT_DATA to 20971520 bytes.
     LOGGING_FD_ENV_VAR is empty! Log to stdout.
@@ -32,7 +32,6 @@ def test_bad_memory_call(tmpdir, capfd, build_test):
     40000,40000:mremap,12,0xffffffffffffffff,0x7fd3b2025000,4096,41943040,1
     mremap,12,0xffffffffffffffff,0x7fd3b2025000,4096,41943040,1
     """
-
     binary_name = "BadMemoryCall"
     binary_path = os.path.join(integrated_test.dmtcp_plugin_test_bin_dir,
                                binary_name)

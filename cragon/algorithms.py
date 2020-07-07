@@ -17,6 +17,13 @@ class CkptAlgorithms(utils.StoppableService):
 class Periodic(CkptAlgorithms):
 
     def __init__(self, do_ckpt_func, stop_ckpt_func, interval):
+        """Periodically call the checkpoint call back function.
+
+        Arguments:
+        do_ckpt_func -- callback function to do checkpoint
+        stop_ckpt_func -- callback function to stop a running ckpt process
+        interval -- interval between the checkpoints
+        """
         super().__init__()
         self.interval = interval
         self.stop_flag = threading.Event()
@@ -31,9 +38,9 @@ class Periodic(CkptAlgorithms):
             if(self.stop_flag.isSet()):
                 break
             else:
-                """ TODO deal with the instant when process
-                TODO: when the process is sleeping?
-                finished but stop not called yet"""
+                # TODO deal with the instant when process
+                # TODO: when the process is sleeping?
+                # finished but stop not called yet
                 self.checkpoint()
 
     def checkpoint(self):

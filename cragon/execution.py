@@ -19,6 +19,7 @@ logger.setLevel(logging.DEBUG)
 class DMTCPCmdOption(object):
 
     def __init__(self):
+        """Generate cmd options for DMTCP."""
         self.options = {}
 
     def set_new_coordinator(self):
@@ -123,7 +124,7 @@ def system_set_up(is_restart):
     # this implicity is a bad design
     if is_restart:
         checkpoint_manager.CkptManager(checkpoint_manager.KeepLatestN,
-                                    context.image_dir_to_restart)
+                                       context.image_dir_to_restart)
     else:
         checkpoint_manager.CkptManager(checkpoint_manager.KeepLatestN)
 
@@ -192,6 +193,9 @@ class FirstRun(Execution):
         self.dmtcp_cmd += context.images_to_restart
 
     def __init__(self, restart=False):
+        """A huge class to manage the execution of subprocess to be
+        checkpointed
+        """
         # the ret code of process to be checkpointed
         self.returncode = None
         # using localhost as coordinator
@@ -264,9 +268,11 @@ class FirstRun(Execution):
         logger.debug("Suceesfully retrieved port: %s", self.dmtcp_port)
 
     def __enter__(self):
+        """Context manager to assure the resource cleanning."""
         return self
 
     def __exit__(self, exc_type, value, traceback):
+        """Do the clean up work."""
         # should never raise here, clean carefully
         states.setTearDwon()
 
@@ -294,7 +300,8 @@ class FirstRun(Execution):
 
         states.setProcessRunning()
 
-        self.process_dmtcp_wrapped = subprocess.Popen(self.dmtcp_cmd)
+        self.process_dmtcp_wrapped = subprocess.Popen(self.dmtcp_cmd,
+                                                      shell=False)
 
     def wait_process(self):
 
@@ -358,7 +365,7 @@ class FirstRun(Execution):
 
         logger.debug(
             "Running checkpoint subprocess: %s." % " ".join(self.ckpt_command))
-        self.ckpt_process = subprocess.Popen(self.ckpt_command,
+        self.ckpt_process = subprocess.Popen(self.ckpt_command, shell=False,
                                              stdout=subprocess.PIPE,
                                              stderr=subprocess.PIPE)
         self.ckpt_process.wait()

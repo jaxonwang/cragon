@@ -30,13 +30,17 @@ static thread_local atomic_flag trapped = ATOMIC_FLAG_INIT;
 const char *LOGGING_FD_ENV_VAR = "DMTCP_PLUGIN_EXEINFO_LOGGING_PIPE";
 const char LOGGING_FIELD_SEPERATOR = ',';
 
-ssize_t _stderr(const char *s) { return write(STDERR_FILENO, s, strlen(s)); }
+inline size_t s_strlen(const char *s){ //safe strlen
+    return strnlen(s, 4096 * 1024);
+}
+
+ssize_t _stderr(const char *s) { return write(STDERR_FILENO, s, s_strlen(s)); }
 
 void _perror(const char *s, int errnum) {
   const size_t PERROR_BUF_SIZE = 512;
   static char perrbuf[PERROR_BUF_SIZE];
 
-  const size_t len = strlen(s);
+  const size_t len = s_strlen(s);
   strncpy(perrbuf, s, PERROR_BUF_SIZE); // will pad zeros to back
   snprintf(perrbuf + len, PERROR_BUF_SIZE - len, " errono: %d\n", errnum);
   _stderr(perrbuf);
@@ -98,7 +102,7 @@ void log(int level, const char *s) {
   static atomic_flag logging_lock = ATOMIC_FLAG_INIT;
   while (logging_lock.test_and_set())
     ; // spin
-  _write(lg_fd, buf, strlen(buf));
+  _write(lg_fd, buf, s_strlen(buf));
   logging_lock.clear();
 }
 
@@ -150,7 +154,7 @@ template <class Arg, class... Args>
 inline void _arg_format(char *buf, int bufsize, Arg first, Args... args) {
   const char *format = get_format<Arg>();
   snprintf(buf, bufsize, format, first);
-  int len = strlen(buf);
+  int len = s_strlen(buf);
   buf += len;
   bufsize -= len;
   if (sizeof...(args) != 0) {
@@ -276,7 +280,7 @@ CREATE_WRAPPER(reallocarray, void *, (void *ptr, size_t nmemb, size_t size),
                ptr, nmemb, size)
 #endif
 
-static void eventHook(DmtcpEvent_t event, DmtcpEventData_t *data) {
+static void eventHook(DmtcpEvent_t event, DmtcpEventData_t *) {
   switch (event) {
   case DMTCP_EVENT_INIT:
     break;

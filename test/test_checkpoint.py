@@ -30,7 +30,7 @@ def test_checkpoint_pi_estimation_no_checkpoint(tmpdir, capfd, build_test,
     ret = integrated_test.run_cragon_cli(cmd)
     assert ret.returncode == 0
 
-    out, err = capfd.readouterr()
+    out, _ = capfd.readouterr()
     pi = float(out.strip())
     assert pi < 3.2 and pi > 3.1
 
@@ -44,7 +44,7 @@ def test_checkpoint_pi_estimation(capfd, build_test,
     assert ret.returncode == 0
     integrated_test.assert_nothing_intercepted(working_dir)
 
-    pi2, err = capfd.readouterr()
+    pi2, _ = capfd.readouterr()
 
     assert pi1 == pi2
 

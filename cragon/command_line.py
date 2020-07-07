@@ -28,7 +28,7 @@ Examples:
 
 @click.group()
 def cli(**args):
-    "Checkpoint and restore tool."
+    """Checkpoint and restore tool."""
 
 
 @click.option('-p', '--dmtcp-path', type=click.Path(exists=True),
@@ -78,7 +78,7 @@ def check_dmtcp_path(dmtcp_path):
 @click.argument('args', nargs=-1)
 @common_options
 def run(**args):
-    "Run the command to be automatically checkpointed."
+    """Run the command to be automatically checkpointed."""
 
     check_dmtcp_path(args["dmtcp_path"])
 
@@ -110,7 +110,7 @@ def run(**args):
                 type=click.Path(exists=True))
 @common_options
 def restart(**args):
-    "Restart from a chekpoint."
+    """Restart from a chekpoint."""
 
     check_dmtcp_path(args["dmtcp_path"])
 

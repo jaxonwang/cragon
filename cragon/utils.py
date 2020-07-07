@@ -74,9 +74,7 @@ def get_command_basename(cmd):
 
 
 def FATAL(msg="", e=None):
-    """
-    system encounters an fatal error, log it before rasie
-    """
+    """system encounters an fatal error, log it before rasie."""
     if msg:
         logger.critical(msg)
     if not e:
@@ -92,6 +90,7 @@ def stderr_and_log(s, logger):
 class AutoStopService(object):
 
     def __init__(self):
+        """A backend service will eventually stop by itself."""
         self.thread = None
 
     def start(self):
@@ -108,6 +107,7 @@ class AutoStopService(object):
 class StoppableService(object):
 
     def __init__(self):
+        """A backend service need to stop by other calling stop()."""
         self.stop_flag = threading.Event()
 
     def start(self):

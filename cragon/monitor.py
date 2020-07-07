@@ -14,9 +14,10 @@ logger.setLevel(logging.DEBUG)
 
 
 class InterceptedCallMonitor(utils.StoppableService):
-    term_token = "this is a very long termination token\n"
+    term_mark = "this is a very long termination token\n"
 
     def __init__(self, fifo_path, record_dir):
+        """Monitor to catch all intercepted log from subprocess."""
         super().__init__()
         self.fifo_path = fifo_path
         self.record_file = context.DirStructure.record_dir_to_intercept_log(
@@ -33,7 +34,7 @@ class InterceptedCallMonitor(utils.StoppableService):
             while True:
                 with open(self.fifo_path, "r") as f:
                     for line in f:
-                        if line != self.term_token:
+                        if line != self.term_mark:
                             rf.write(line)
                         else:
                             logger.info(
@@ -42,16 +43,14 @@ class InterceptedCallMonitor(utils.StoppableService):
 
     def stop(self):
         with open(self.fifo_path, "w") as f:
-            f.write(self.term_token)
+            f.write(self.term_mark)
         self.thread.join()
-
-    def __del__(self):
-        pass
 
 
 class MetricMonitor(utils.StoppableService):
 
     def __init__(self, interval, record_dir):
+        """Monitor to collect system resource usage metrics."""
         super().__init__()
         self.interval = interval
         self.system_metrics_file = \
@@ -149,7 +148,8 @@ class MetricMonitor(utils.StoppableService):
             # subprocesses can start and stop at any time
             processes = psutil.Process(pid=self.pid).children(recursive=True)
             all_prcs_m = {}
-            [all_prcs_m.update(per_process_metrics(p)) for p in processes]
+            for p in processes:
+                all_prcs_m.update(per_process_metrics(p))
             return all_prcs_m
 
         self.system_metrics_getters = [cpu_indexed_metrics, memory_metrics]
@@ -198,7 +198,8 @@ class MetricMonitor(utils.StoppableService):
     def get_current_system_metrics(self):
         # return list of metrics
         metrics = {}
-        [metrics.update(i()) for i in self.system_metrics_getters]
+        for i in self.system_metrics_getters:
+            metrics.update(i())
         return metrics
 
     def get_current_process_metrics(self):

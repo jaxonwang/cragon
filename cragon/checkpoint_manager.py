@@ -27,15 +27,20 @@ def gen_image_dir_name(username, hostname, global_id, parent_id):
     return "%s@%s:%d_%d" % (username, hostname, global_id, parent_id)
 
 
-"""
-dir pattern : user@host:id_parent
-"""
+# dir pattern : user@host:id_parentofthisid
 dir_name_pattern = re.compile("^(.+)@(.+):([0-9]+)_([0-9]+)$")
 
 
 class Image(object):
 
     def __init__(self, user, host, global_id, parent_id):
+        """Image class to store basic info of image.
+        Arguments:
+        user -- user who make this checkpoint
+        host -- the machine where this checkpoint was made
+        global_id -- global unique id of one run
+        parent_id -- last checkpoint before the point when this restart from
+        """
         self.user = user
         self.host = host
         self.global_id = int(global_id)
@@ -88,6 +93,7 @@ class ImageUpdatePolicy(object):
 class KeepLatestN(ImageUpdatePolicy):
 
     def __init__(self, N):
+        """Keep the latest N images policy."""
         pass
 
 
@@ -99,6 +105,7 @@ class KeepAll(ImageUpdatePolicy):
 class CkptManager(object):
 
     def __init__(self, ckpt_policy, image_dir_to_restart=None):
+        """who controls everything of checkpoint and related images."""
         self.ckpt_policy = ckpt_policy
         self.image_list = None
         logger.info("Set the checkpoint image management policy: %s",

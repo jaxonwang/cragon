@@ -57,20 +57,23 @@ void test_wrapped() {
   printf("malloc,%d,%p,%d\n", errno, (void *)chunk_malloc, chunk_size);
 
   int *chunk_calloc = calloc(chunk_size / sizeof(int), sizeof(int));
-  printf("calloc,%d,%p,%ld,%ld\n", errno, (void *)chunk_calloc,
+  printf("calloc,%d,%p,%lu,%lu\n", errno, (void *)chunk_calloc,
          chunk_size / sizeof(int), sizeof(int));
 
   char *good_malloc = malloc(small_memory);
+  free(chunk_malloc);
   chunk_malloc = realloc(good_malloc, chunk_size);
-  printf("realloc,%d,%p,%p,%d\n", errno, (void *)chunk_calloc, good_malloc, chunk_size);
+  printf("realloc,%d,%p,%p,%d\n", errno, (void *)chunk_malloc, good_malloc, chunk_size);
+  free(chunk_malloc);
 
 /* reallocarray is introduced in glibc 2.26 */
 #if __GLIBC_MINOR__ >= 26
   good_malloc = malloc(small_memory);
   chunk_calloc =
       reallocarray(good_malloc, chunk_size / sizeof(int), sizeof(int));
-  printf("reallocarray,%d,%p,%p,%ld,%ld\n", errno, (void *)chunk_calloc, good_malloc,
+  printf("reallocarray,%d,%p,%p,%lu,%lu\n", errno, (void *)chunk_calloc, good_malloc,
          chunk_size / sizeof(int), sizeof(int));
+  free(chunk_calloc);
 #endif
 
   void *brk_addr = sbrk(chunk_size);

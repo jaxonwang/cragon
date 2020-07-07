@@ -18,7 +18,7 @@ int *consume(int length) {
   for (int i = 0; i < length; i++) {
     a[i] = i;
   }
-  printf("Using %ld KB memory.\n", length * sizeof(int) / 1024);
+  printf("Using %lu KB memory.\n", length * sizeof(int) / 1024);
   return a;
 }
 const int length = 4096;
