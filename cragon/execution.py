@@ -167,7 +167,7 @@ class FirstRun(Execution):
                 ckpt_func, stop_ckpt_func, context.ckpt_intervals)
 
     def init_common_cmd(self):
-        self.dmtcp_cmd += ["--ckptdir", context.ckpt_dir]
+        self.dmtcp_cmd += ["--ckptdir", self.ckpt_tmp_dir]
 
         # built in options
         # using random port num for dmtcp coordinator
@@ -192,6 +192,13 @@ class FirstRun(Execution):
 
         self.dmtcp_cmd += context.images_to_restart
 
+    def prepare_ckpt_tmp_dir(self):
+        # tmp dir to store images temperory
+        ckpt_tmp = context.command[0] + str(time.time())
+        self.ckpt_tmp_dir = context.DirStructure.ckpt_tmp_dir(context.tmp_dir,
+                                                              ckpt_tmp)
+        utils.create_dir_unless_exist(self.ckpt_tmp_dir)
+
     def __init__(self, restart=False):
         """A huge class to manage the execution of subprocess to be
         checkpointed
@@ -210,6 +217,8 @@ class FirstRun(Execution):
         self.command_to_run = context.command
         # ckpt process, saved for easy manipulation
         self.ckpt_process = None
+
+        self.prepare_ckpt_tmp_dir()
 
         # init cmd
         if self.isrestart:
@@ -288,6 +297,9 @@ class FirstRun(Execution):
         utils.safe_clean_file(self.fifo_path)
         logger.debug("Deleting temp port file: %s" % self.dmtcp_port_file_path)
         utils.safe_clean_file(self.dmtcp_port_file_path)
+
+        if os.path.exists(self.ckpt_tmp_dir):
+            utils.safe_rm_tree(self.ckpt_tmp_dir)
 
         if not value:
             return True
@@ -382,7 +394,8 @@ class FirstRun(Execution):
             # TODO add event of ckpt finished
             time_ckpt_finished = time.time()
             checkpoint_manager.CkptManager().make_checkpoint(
-                self.gen_ckpt_info(ckpt_timestamp=time_ckpt_finished))
+                self.ckpt_tmp_dir, self.gen_ckpt_info(
+                    ckpt_timestamp=time_ckpt_finished))
 
         self.ckpt_process = None
 

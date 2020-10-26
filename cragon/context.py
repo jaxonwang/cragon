@@ -23,7 +23,7 @@ dmtcp_plugin_name = "libcragon_exeinfo.so"
 cragon_lib_dirname = "lib"
 cragon_bin_dirname = "bin"
 
-file_date_format = '%Y-%m-%d_%H:%M:%S,%f'
+file_date_format = '%Y-%m-%d_%H:%M:%S.%f'
 
 cwd = os.getcwd()
 working_dir = None
@@ -253,6 +253,10 @@ class DirStructure(object):
     def ckpt_dir_to_image_dir(ckpt_dir, idir):
         # idir is different every ckpt
         return os.path.join(ckpt_dir, idir)
+
+    @staticmethod
+    def ckpt_tmp_dir(ckpt_dir, dirname):
+        return os.path.join(ckpt_dir, dirname)
 
     @staticmethod
     def tmp_dir_to_fifo_path(tmp_dir):

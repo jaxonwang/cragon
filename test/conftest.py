@@ -49,7 +49,7 @@ def image_prepare(tmpdir_factory):
         integrated_test.checkpoint_bin_dir, "PiEst")
 
     cmd = ["run", "-i", str(interval), "-w", working_dir, binary_path,
-           "800000"]
+           "1000000"]
     p = subprocess.run(["cragon"] + cmd, stdout=subprocess.PIPE,
                        stderr=subprocess.PIPE)
 

@@ -139,7 +139,7 @@ class CkptManager(object):
         self.next_image_parent_id = ret_global_id
         return ret_global_id, ret_parent_id
 
-    def make_checkpoint(self, ckpt_info):
+    def make_checkpoint(self, ckpt_tmp_dir, ckpt_info):
         # record and archive the checkpoint of
         g_id, p_id = self.next_ckpt_id()
         archive_dir_name = gen_image_dir_name(context.current_user_name,
@@ -147,11 +147,13 @@ class CkptManager(object):
                                               g_id, p_id)
         archive_dir_path = context.DirStructure.ckpt_dir_to_image_dir(
             context.ckpt_dir, archive_dir_name)
-        utils.create_dir_unless_exist(archive_dir_path)
 
-        image_files = get_unarchived_images()
-        for f in image_files:
-            shutil.move(f, archive_dir_path)
+        # move the ckpt images from tmp dir to archive dir
+        shutil.move(ckpt_tmp_dir, archive_dir_path)
+        # Caution: this should be atomic but I don't bother to do that,
+        # assume this move and create is fast enough and dmtcp won't notice the
+        # change
+        utils.create_dir_unless_exist(ckpt_tmp_dir)
 
         logger.info("Archiving current checkpoint images to %s" %
                     archive_dir_path)

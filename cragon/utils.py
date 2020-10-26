@@ -1,6 +1,7 @@
 import logging
 import os
 import sys
+import shutil
 import threading
 
 logger = logging.getLogger(__name__)
@@ -57,6 +58,13 @@ def safe_clean_file(file_path):
             os.rmdir(file_path)
         else:
             os.unlink(file_path)
+
+
+def safe_rm_tree(file_path):
+    if not file_path:
+        return
+    if os.path.exists(file_path):
+        shutil.rmtree(file_path)
 
 
 def create_dir_unless_exist(path):
