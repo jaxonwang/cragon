@@ -42,12 +42,16 @@ ROOT_DIR = os.path.dirname(os.path.abspath(__file__))
 
 ckpt_intervals = 60
 ckpt_algorihtm = None
+ckpt_maxratio = 0.15
+ckpt_ratio = 0.1  # checkpoint should not be greater than this
 
 default_metrics_interval = 1
 
 command = None
 image_dir_to_restart = None
 images_to_restart = None
+execution_walltime = None
+
 fifo_path = None  # guarenteed to be absolute
 fifo_file_name = "cragon-logging.fifo"
 dmtcp_port_file_name = "dmtcp_port_file.tmp"

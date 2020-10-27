@@ -365,6 +365,11 @@ class FirstRun(Execution):
 
         return ckpt_info
 
+    def checkpoint_cmd(self):
+        self.ckpt_process = subprocess.Popen(self.ckpt_command, shell=False,
+                                             stdout=subprocess.PIPE,
+                                             stderr=subprocess.PIPE)
+
     def checkpoint(self):
         # this fun is called in another thread
         try:
@@ -377,9 +382,8 @@ class FirstRun(Execution):
 
         logger.debug(
             "Running checkpoint subprocess: %s." % " ".join(self.ckpt_command))
-        self.ckpt_process = subprocess.Popen(self.ckpt_command, shell=False,
-                                             stdout=subprocess.PIPE,
-                                             stderr=subprocess.PIPE)
+
+        self.checkpoint_cmd()
         self.ckpt_process.wait()
         logger.debug("Checkpoint subprocess: %s finished with ret code:%d." % (
             " ".join(self.ckpt_command), self.ckpt_process.returncode))
