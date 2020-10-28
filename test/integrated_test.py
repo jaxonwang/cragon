@@ -1,5 +1,7 @@
 import os
 import subprocess
+import time
+import signal
 
 from pathlib import Path
 
@@ -25,6 +27,13 @@ dmtcp_plugins = os.path.join(dmtcp_plugin_path,
 
 def run_cragon_cli(args):
     p = subprocess.run(["cragon"] + args)
+    return p
+
+
+def run_cragon_cli_kill_after(args, seconds):
+    p = subprocess.Popen(["cragon"] + args)
+    time.sleep(seconds)
+    p.send_signal(signal.SIGINT)
     return p
 
 

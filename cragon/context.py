@@ -170,8 +170,9 @@ def ckpt_info_check(ckpt_image_dir):
     fifo_path = last_ckpt_info["data"]["fifo_path"]
 
     # should be cleaned from last execution
+    msg = "Could be another cragon instance is running, or last cragon did not quit properly. Please remove the file for the later case."
     if os.path.exists(fifo_path):
-        check_failed("Fifo file %s exists." % fifo_path)
+        check_failed("Fifo file %s exists." % fifo_path + msg)
 
     # record the command
     command = last_ckpt_info["command"]
