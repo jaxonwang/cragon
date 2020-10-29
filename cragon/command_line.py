@@ -7,6 +7,7 @@ import sys
 from cragon import utils
 from cragon import context
 from cragon import execution
+from cragon import plugin_spec
 
 
 def bad_args_exit(err_msg):
@@ -46,6 +47,9 @@ def cli(**args):
     """Checkpoint and restore tool."""
 
 
+@click.option('-l', '--plugins', multiple=True, type=click.Path(exists=True),
+              help=("Specify a cragon plug-ins. Can be set multiple times."
+                    "Plugins ill be invoked from the rightmost to left."))
 @click.option('-p', '--dmtcp-path', type=click.Path(exists=True),
               help="DMTCP binary path")
 @click.option('-i', '--intervals', type=click.FLOAT,
@@ -91,6 +95,13 @@ def check_dmtcp_path(dmtcp_path):
     context.dmtcp_path = dmtcp_path
 
 
+def load_plugins(args):
+    modules = []
+    if args["plugins"]:
+        modules = plugin_spec.load_plugin_modules(args["plugins"])
+    context.plugin_hook = plugin_spec.get_plugin_hook(modules)
+
+
 @cli.command()
 @click.option('-w', '--working-directory', type=click.Path(exists=True),
               help=("Cragon working directory where"
@@ -121,6 +132,7 @@ def run(**args):
         context.ckpt_intervals = float(args["intervals"])
 
     set_walltime(args)
+    load_plugins(args)
 
     execution.start_all(is_restart=False)
 
@@ -176,6 +188,7 @@ def restart(**args):
         context.ckpt_intervals = float(args["intervals"])
 
     set_walltime(args)
+    load_plugins(args)
 
     execution.start_all(is_restart=True)
 

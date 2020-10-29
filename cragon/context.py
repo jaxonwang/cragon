@@ -51,6 +51,7 @@ command = None
 image_dir_to_restart = None
 images_to_restart = None
 execution_walltime = None
+plugin_hook = None
 
 fifo_path = None  # guarenteed to be absolute
 fifo_file_name = "cragon-logging.fifo"

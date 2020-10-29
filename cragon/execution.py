@@ -312,6 +312,10 @@ class FirstRun(Execution):
 
         states.setProcessRunning()
 
+        if self.isrestart:
+            context.plugin_hook.restart(exeinfo=self)
+        else:
+            context.plugin_hook.start(exeinfo=self)
         self.process_dmtcp_wrapped = subprocess.Popen(self.dmtcp_cmd,
                                                       shell=False)
 
@@ -330,6 +334,12 @@ class FirstRun(Execution):
                                  signals.strsignal(siginfo.si_status), logger)
 
         self.returncode = self.process_dmtcp_wrapped.returncode
+
+        if self.returncode == 0:
+            context.plugin_hook.done(exeinfo=self)
+            # TODO check rerunable fail
+        else:
+            context.plugin_hook.fail(exeinfo=self)
         logger.info(
             "Process to be checkpointed finished with ret code :%d." %
             self.returncode)
@@ -383,8 +393,11 @@ class FirstRun(Execution):
         logger.debug(
             "Running checkpoint subprocess: %s." % " ".join(self.ckpt_command))
 
+        context.plugin_hook.checkpoint(exeinfo=self)
         self.checkpoint_cmd()
         self.ckpt_process.wait()
+        context.plugin_hook.checkpoint_done(exeinfo=self)
+
         logger.debug("Checkpoint subprocess: %s finished with ret code:%d." % (
             " ".join(self.ckpt_command), self.ckpt_process.returncode))
 
